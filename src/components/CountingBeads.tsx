@@ -13,10 +13,10 @@ interface Bead {
   active: boolean;
 }
 
-function buildRow(count: number): Bead[] {
+function buildRow(): Bead[] {
   return Array.from({ length: 10 }, (_, i) => ({
     id: i,
-    active: i < Math.min(count, 10),
+    active: false,
   }));
 }
 
