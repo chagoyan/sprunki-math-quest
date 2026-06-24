@@ -2,6 +2,7 @@ import { AnimatePresence, motion, useAnimationControls } from "framer-motion";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BigButton } from "@/components/BigButton";
 import { SprunkiAvatar } from "@/components/SprunkiAvatar";
+import { CountingBeads } from "@/components/CountingBeads";
 import { fireConfetti } from "@/components/ConfettiBurst";
 import { generateProblem, operationSymbol } from "@/lib/problems";
 import { sound } from "@/lib/sound";
@@ -26,6 +27,7 @@ export function PracticeScreen({ game, go }: Props) {
   const [selected, setSelected] = useState<number | null>(null);
   const [status, setStatus] = useState<"idle" | "correct" | "wrong">("idle");
   const [levelUp, setLevelUp] = useState<{ level: number; unlocked?: Sprunki } | null>(null);
+  const [showBeads, setShowBeads] = useState<boolean>(true);
   const cardControls = useAnimationControls();
   const advanceTimer = useRef<number | null>(null);
 
@@ -142,6 +144,31 @@ export function PracticeScreen({ game, go }: Props) {
             <span className="text-muted-foreground">=</span>{" "}
             <span className="text-muted-foreground/70">?</span>
           </div>
+
+          <div className="flex items-center justify-between">
+            <button
+              type="button"
+              onClick={() => setShowBeads((v) => !v)}
+              className="rounded-full bg-card px-4 py-2 text-xs font-bold ring-1 ring-border shadow-sm hover:bg-accent"
+              aria-pressed={showBeads}
+            >
+              {showBeads ? "🧮 Hide beads" : "🧮 Show beads"}
+            </button>
+          </div>
+
+          <AnimatePresence initial={false}>
+            {showBeads && (
+              <motion.div
+                key="beads"
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.25 }}
+              >
+                <CountingBeads a={problem.a} b={problem.b} operation={problem.operation} />
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           <div className="grid grid-cols-2 gap-3 sm:gap-4">
             {choices.map((choice) => {
