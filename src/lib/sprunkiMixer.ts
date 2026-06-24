@@ -4,7 +4,7 @@
  */
 import { getLongerSprunkiAudioUrl, getFirstSprunkiAudioUrl } from "./sprunkiAudio";
 
-type Listener = (active: Set<string>) => void;
+type Listener = (active: Set<number>) => void;
 
 const elements = new Map<number, HTMLAudioElement>();
 const active = new Set<number>();
@@ -16,7 +16,7 @@ function emit() {
   listeners.forEach((l) => l(snapshot));
 }
 
-function getEl(id: string, url: string): HTMLAudioElement | null {
+function getEl(id: number, url: string): HTMLAudioElement | null {
   if (typeof window === "undefined") return null;
   let el = elements.get(id);
   if (!el) {
@@ -32,11 +32,11 @@ function getEl(id: string, url: string): HTMLAudioElement | null {
 }
 
 export const mixer = {
-  isActive(id: string) {
+  isActive(id: number) {
     return active.has(id);
   },
 
-  toggle(id: string, icon: string) {
+  toggle(id: number, icon: string) {
     if (active.has(id)) {
       this.stop(id);
     } else {
@@ -44,7 +44,7 @@ export const mixer = {
     }
   },
 
-  start(id: string, icon: string) {
+  start(id: number, icon: string) {
     const url = getLongerSprunkiAudioUrl(icon);
     if (!url) return;
     const el = getEl(id, url);
@@ -54,7 +54,7 @@ export const mixer = {
     emit();
   },
 
-  stop(id: string) {
+  stop(id: number) {
     const el = elements.get(id);
     if (el) {
       el.pause();
