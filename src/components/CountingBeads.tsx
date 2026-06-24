@@ -41,7 +41,14 @@ export function CountingBeads({ operation, solved, guideIcon }: Props) {
     }
   }, [solved]);
 
+  const playBeadSound = () => {
+    if (!guideIcon) return;
+    const url = getSecondSprunkiAudioUrl(guideIcon);
+    if (url) music.playEffect(url);
+  };
+
   const toggleTop = (id: number) => {
+    playBeadSound();
     setTopRow((prev) =>
       prev.map((bead) =>
         bead.id === id ? { ...bead, active: !bead.active } : bead
@@ -50,6 +57,7 @@ export function CountingBeads({ operation, solved, guideIcon }: Props) {
   };
 
   const toggleBottom = (id: number) => {
+    playBeadSound();
     setBottomRow((prev) =>
       prev.map((bead) =>
         bead.id === id ? { ...bead, active: !bead.active } : bead
