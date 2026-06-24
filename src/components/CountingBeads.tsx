@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import type { Operation } from "@/types";
+import { Lightbulb } from "lucide-react";
 
 interface Props {
   a: number;
