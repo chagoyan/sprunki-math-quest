@@ -54,6 +54,8 @@ export function CountingBeads({ operation, solved }: Props) {
     );
   };
 
+  const [showHint, setShowHint] = useState(false);
+
   const topActive = topRow.filter((b) => b.active).length;
   const bottomActive = bottomRow.filter((b) => b.active).length;
   const totalActive = operation === "subtraction" ? topActive : topActive + bottomActive;
@@ -63,9 +65,15 @@ export function CountingBeads({ operation, solved }: Props) {
       {/* Counter header */}
       <div className="mb-3 flex items-center justify-between text-xs font-bold uppercase tracking-widest text-[oklch(0.4_0.06_60)]">
         <span>Tap beads to count!</span>
-        <span className="rounded-full bg-white/70 px-3 py-1 text-[oklch(0.3_0.06_60)] ring-1 ring-[oklch(0.6_0.1_60)]/15 tabular-nums">
-          {operation === "subtraction" ? `${topActive} left` : `${totalActive} total`}
-        </span>
+        <button
+          type="button"
+          onClick={() => setShowHint((v) => !v)}
+          className="flex items-center gap-1 rounded-full bg-white/70 px-3 py-1 text-[oklch(0.3_0.06_60)] ring-1 ring-[oklch(0.6_0.1_60)]/15 tabular-nums hover:bg-white transition-colors"
+          aria-pressed={showHint}
+        >
+          <Lightbulb className="h-3 w-3" />
+          {showHint ? (operation === "subtraction" ? `${topActive} left` : `${totalActive} total`) : "Hint"}
+        </button>
       </div>
 
       {/* Abacus frame */}
