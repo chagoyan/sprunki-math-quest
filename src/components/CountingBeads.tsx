@@ -49,10 +49,6 @@ export function CountingBeads({ a, b, operation }: Props) {
   const bottomActive = bottomRow.filter((b) => b.active).length;
   const totalActive = operation === "subtraction" ? topActive : topActive + bottomActive;
 
-  // Sort so active beads cluster at the start of the row
-  const sortedTop = [...topRow].sort((x, y) => (y.active ? 1 : 0) - (x.active ? 1 : 0));
-  const sortedBottom = [...bottomRow].sort((x, y) => (y.active ? 1 : 0) - (x.active ? 1 : 0));
-
   return (
     <div className="rounded-[1.5rem] bg-gradient-to-b from-[oklch(0.9_0.04_75)] to-[oklch(0.82_0.06_70)] p-3 ring-1 ring-[oklch(0.6_0.1_60)]/25 shadow-inner sm:p-4">
       {/* Counter header */}
@@ -67,14 +63,14 @@ export function CountingBeads({ a, b, operation }: Props) {
       <div className="flex flex-col gap-2 rounded-2xl bg-[oklch(0.78_0.08_65)]/40 p-3 ring-1 ring-[oklch(0.6_0.08_60)]/20 sm:gap-3 sm:p-4">
         {/* Row 1 — warm/amber beads */}
         <AbacusRow
-          beads={sortedTop}
+          beads={topRow}
           color="warm"
           onToggle={toggleTop}
         />
 
         {/* Row 2 — cool/sky beads */}
         <AbacusRow
-          beads={sortedBottom}
+          beads={bottomRow}
           color="cool"
           onToggle={toggleBottom}
         />
@@ -92,15 +88,10 @@ function AbacusRow({
   color: "warm" | "cool";
   onToggle: (id: number) => void;
 }) {
-  const activeGradient =
+  const gradient =
     color === "warm"
       ? "from-[oklch(0.82_0.16_55)] to-[oklch(0.58_0.2_45)] shadow-[0_3px_0_oklch(0.42_0.16_40)]"
       : "from-[oklch(0.78_0.14_230)] to-[oklch(0.56_0.18_240)] shadow-[0_3px_0_oklch(0.38_0.14_245)]";
-
-  const inactiveGradient =
-    color === "warm"
-      ? "from-[oklch(0.82_0.16_55)]/35 to-[oklch(0.58_0.2_45)]/35"
-      : "from-[oklch(0.78_0.14_230)]/35 to-[oklch(0.56_0.18_240)]/35";
 
   return (
     <div className="relative flex items-center">
@@ -113,28 +104,34 @@ function AbacusRow({
         {beads.map((bead) => (
           <motion.button
             key={bead.id}
-            layout
             type="button"
             onClick={() => onToggle(bead.id)}
             whileTap={{ scale: 0.82 }}
             animate={{
-              opacity: bead.active ? 1 : 0.4,
-              scale: bead.active ? 1 : 0.85,
-              y: bead.active ? -3 : 2,
+              scale: bead.active ? 1.08 : 1,
+              y: bead.active ? -3 : 0,
             }}
             transition={{
               type: "spring",
               stiffness: 380,
               damping: 24,
-              layout: { duration: 0.3 },
             }}
             className={[
-              "h-6 w-6 rounded-full bg-gradient-to-b ring-1 ring-black/10 sm:h-8 sm:w-8",
-              bead.active ? activeGradient : inactiveGradient,
-              !bead.active && "shadow-none",
+              "relative h-6 w-6 rounded-full bg-gradient-to-b ring-1 ring-black/10 sm:h-8 sm:w-8",
+              gradient,
             ].join(" ")}
             aria-label={`Bead ${bead.id + 1}`}
-          />
+          >
+            {bead.active && (
+              <motion.span
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ type: "spring", stiffness: 500, damping: 15 }}
+                className="absolute -top-1 left-1/2 h-2.5 w-2.5 -translate-x-1/2 rounded-full bg-[oklch(0.9_0.18_95)] ring-1 ring-[oklch(0.7_0.2_90)] shadow-sm sm:h-3 sm:w-3"
+                aria-hidden
+              />
+            )}
+          </motion.button>
         ))}
       </div>
     </div>
