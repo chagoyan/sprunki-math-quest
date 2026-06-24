@@ -37,6 +37,9 @@ import pinki_full from "@/assets/sprunki-full/pinki.svg.asset.json";
 import raddy_full from "@/assets/sprunki-full/raddy.svg.asset.json";
 import simon_full from "@/assets/sprunki-full/simon.svg.asset.json";
 import sky_full from "@/assets/sprunki-full/sky.svg.asset.json";
+import tunner_full from "@/assets/sprunki-full/tunner.svg.asset.json";
+import vineria_full from "@/assets/sprunki-full/vineria.svg.asset.json";
+import wenda_full from "@/assets/sprunki-full/wenda.svg.asset.json";
 
 type AssetRef = { url: string };
 
