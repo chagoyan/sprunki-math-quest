@@ -75,7 +75,7 @@ export function CollectionScreen({ game, go }: Props) {
             <motion.div
               key={s.id}
               whileHover={{ y: -4 }}
-              className={`relative flex flex-col items-center gap-3 rounded-3xl bg-card p-4 shadow-sm ring-2 transition-all hover:shadow-md ${
+              className={`relative flex flex-col items-center gap-3 rounded-3xl bg-card p-4 shadow-sm ring-2 transition-all ${
                 playing ? "ring-emerald-400 ring-4 shadow-lg" : rarityRing[s.rarity]
               }`}
             >
