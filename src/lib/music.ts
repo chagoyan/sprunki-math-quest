@@ -4,7 +4,10 @@
  * music.start() to (re)start the current/random loop,
  * music.stop() to pause, music.setMuted() to mute.
  */
-import { getRandomSprunkiAudioUrl, getLongerSprunkiAudioUrl } from "./sprunkiAudio";
+import { getRandomSprunkiAudioUrl, getLongerSprunkiAudioUrl, getAllSprunkiAudioUrls } from "./sprunkiAudio";
+
+const preloaded = new Map<string, HTMLAudioElement>();
+let preloadStarted = false;
 
 let audio: HTMLAudioElement | null = null;
 let currentUrl: string | null = null;
@@ -89,8 +92,24 @@ export const music = {
   /** Play a one-shot sound effect without interrupting the background loop. */
   playEffect(url: string) {
     if (muted || typeof window === "undefined") return;
-    const el = new Audio(url);
+    const cached = preloaded.get(url);
+    const el = cached ? (cached.cloneNode(true) as HTMLAudioElement) : new Audio(url);
     el.volume = 0.35;
     void el.play().catch(() => {});
+  },
+
+  /** Preload every Sprunki audio file so playback is instant on first tap. */
+  preloadAll() {
+    if (preloadStarted || typeof window === "undefined") return;
+    preloadStarted = true;
+    for (const url of getAllSprunkiAudioUrls()) {
+      if (preloaded.has(url)) continue;
+      const el = new Audio();
+      el.preload = "auto";
+      el.src = url;
+      // Kick off the network fetch.
+      try { el.load(); } catch { /* noop */ }
+      preloaded.set(url, el);
+    }
   },
 };

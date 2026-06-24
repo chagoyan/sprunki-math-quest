@@ -81,3 +81,8 @@ export function getLongerSprunkiAudioUrl(icon: string): string | undefined {
   const urls = TRACKS[baseName(icon)] ?? [];
   return urls[1]?.url ?? urls[0]?.url;
 }
+
+/** Returns every Sprunki audio URL across all characters. */
+export function getAllSprunkiAudioUrls(): string[] {
+  return Object.values(TRACKS).flatMap((arr) => arr.map((t) => t.url));
+}
