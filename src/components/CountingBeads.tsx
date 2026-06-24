@@ -9,93 +9,132 @@ interface Props {
 }
 
 interface Bead {
-  key: string;
-  group: "a" | "b";
-  removed: boolean; // for subtraction crossing-out
-  flicked: boolean; // user tapped to count
+  id: number;
+  active: boolean;
 }
 
-function buildBeads(a: number, b: number, operation: Operation): Bead[] {
-  const beads: Bead[] = [];
-  for (let i = 0; i < a; i++) beads.push({ key: `a-${i}`, group: "a", removed: false, flicked: false });
-  const bCount = operation === "subtraction" ? Math.min(b, a) : b;
-  for (let i = 0; i < bCount; i++) {
-    beads.push({
-      key: `b-${i}`,
-      group: "b",
-      removed: false,
-      flicked: false,
-    });
-  }
-  return beads;
+function buildRow(count: number): Bead[] {
+  return Array.from({ length: 10 }, (_, i) => ({
+    id: i,
+    active: i < Math.min(count, 10),
+  }));
 }
-
-const groupStyles: Record<"a" | "b", string> = {
-  a: "from-[oklch(0.82_0.18_50)] to-[oklch(0.62_0.22_40)] shadow-[0_4px_0_oklch(0.45_0.18_40)]",
-  b: "from-[oklch(0.82_0.18_240)] to-[oklch(0.6_0.22_250)] shadow-[0_4px_0_oklch(0.42_0.18_255)]",
-};
 
 export function CountingBeads({ a, b, operation }: Props) {
-  const [beads, setBeads] = useState<Bead[]>(() => buildBeads(a, b, operation));
+  const [topRow, setTopRow] = useState<Bead[]>(() => buildRow(a));
+  const [bottomRow, setBottomRow] = useState<Bead[]>(() => buildRow(b));
 
   useEffect(() => {
-    setBeads(buildBeads(a, b, operation));
-  }, [a, b, operation]);
+    setTopRow(buildRow(a));
+    setBottomRow(buildRow(b));
+  }, [a, b]);
 
-  const toggle = (idx: number) => {
-    setBeads((prev) => {
-      const next = [...prev];
-      const bead = { ...next[idx] };
-      if (operation === "subtraction" && bead.group === "a") {
-        bead.removed = !bead.removed;
-      } else {
-        bead.flicked = !bead.flicked;
-      }
-      next[idx] = bead;
-      return next;
-    });
+  const toggleTop = (id: number) => {
+    setTopRow((prev) =>
+      prev.map((bead) =>
+        bead.id === id ? { ...bead, active: !bead.active } : bead
+      )
+    );
   };
 
-  const remaining = beads.filter((bd) => !bd.removed).length;
-  const flicked = beads.filter((bd) => bd.flicked && !bd.removed).length;
+  const toggleBottom = (id: number) => {
+    setBottomRow((prev) =>
+      prev.map((bead) =>
+        bead.id === id ? { ...bead, active: !bead.active } : bead
+      )
+    );
+  };
+
+  const topActive = topRow.filter((b) => b.active).length;
+  const bottomActive = bottomRow.filter((b) => b.active).length;
+  const totalActive = operation === "subtraction" ? topActive : topActive + bottomActive;
+
+  // Sort so active beads cluster at the start of the row
+  const sortedTop = [...topRow].sort((x, y) => (y.active ? 1 : 0) - (x.active ? 1 : 0));
+  const sortedBottom = [...bottomRow].sort((x, y) => (y.active ? 1 : 0) - (x.active ? 1 : 0));
 
   return (
-    <div className="rounded-3xl bg-gradient-to-b from-[oklch(0.98_0.02_80)] to-[oklch(0.94_0.04_70)] p-4 ring-1 ring-border/60 shadow-inner">
-      <div className="mb-3 flex items-center justify-between text-xs font-bold uppercase tracking-widest text-muted-foreground">
-        <span>Tap the beads to count!</span>
-        <span className="rounded-full bg-white px-3 py-1 text-foreground ring-1 ring-border tabular-nums">
-          {operation === "subtraction" ? `${remaining} left` : `${flicked} / ${remaining}`}
+    <div className="rounded-[1.5rem] bg-gradient-to-b from-[oklch(0.9_0.04_75)] to-[oklch(0.82_0.06_70)] p-3 ring-1 ring-[oklch(0.6_0.1_60)]/25 shadow-inner sm:p-4">
+      {/* Counter header */}
+      <div className="mb-3 flex items-center justify-between text-xs font-bold uppercase tracking-widest text-[oklch(0.4_0.06_60)]">
+        <span>Tap beads to count!</span>
+        <span className="rounded-full bg-white/70 px-3 py-1 text-[oklch(0.3_0.06_60)] ring-1 ring-[oklch(0.6_0.1_60)]/15 tabular-nums">
+          {operation === "subtraction" ? `${topActive} left` : `${totalActive} total`}
         </span>
       </div>
-      <div className="flex flex-wrap items-center gap-2">
-        {beads.map((bead, idx) => (
+
+      {/* Abacus frame */}
+      <div className="flex flex-col gap-2 rounded-2xl bg-[oklch(0.78_0.08_65)]/40 p-3 ring-1 ring-[oklch(0.6_0.08_60)]/20 sm:gap-3 sm:p-4">
+        {/* Row 1 — warm/amber beads */}
+        <AbacusRow
+          beads={sortedTop}
+          color="warm"
+          onToggle={toggleTop}
+        />
+
+        {/* Row 2 — cool/sky beads */}
+        <AbacusRow
+          beads={sortedBottom}
+          color="cool"
+          onToggle={toggleBottom}
+        />
+      </div>
+    </div>
+  );
+}
+
+function AbacusRow({
+  beads,
+  color,
+  onToggle,
+}: {
+  beads: Bead[];
+  color: "warm" | "cool";
+  onToggle: (id: number) => void;
+}) {
+  const activeGradient =
+    color === "warm"
+      ? "from-[oklch(0.82_0.16_55)] to-[oklch(0.58_0.2_45)] shadow-[0_3px_0_oklch(0.42_0.16_40)]"
+      : "from-[oklch(0.78_0.14_230)] to-[oklch(0.56_0.18_240)] shadow-[0_3px_0_oklch(0.38_0.14_245)]";
+
+  const inactiveGradient =
+    color === "warm"
+      ? "from-[oklch(0.82_0.16_55)]/35 to-[oklch(0.58_0.2_45)]/35"
+      : "from-[oklch(0.78_0.14_230)]/35 to-[oklch(0.56_0.18_240)]/35";
+
+  return (
+    <div className="relative flex items-center">
+      {/* Rod line */}
+      <div className="pointer-events-none absolute top-1/2 left-0 right-0 h-0.5 -translate-y-1/2 rounded-full bg-[oklch(0.55_0.08_60)]/30" />
+      {/* Center divider */}
+      <div className="pointer-events-none absolute top-1/2 left-1/2 z-0 h-7 w-0.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[oklch(0.55_0.08_60)]/40 sm:h-9" />
+
+      <div className="relative z-10 flex w-full items-center justify-between gap-0.5 sm:gap-1">
+        {beads.map((bead) => (
           <motion.button
-            key={bead.key}
+            key={bead.id}
+            layout
             type="button"
-            onClick={() => toggle(idx)}
-            whileTap={{ scale: 0.85 }}
+            onClick={() => onToggle(bead.id)}
+            whileTap={{ scale: 0.82 }}
             animate={{
-              opacity: bead.removed ? 0.25 : 1,
-              scale: bead.flicked ? 1.1 : 1,
-              y: bead.flicked ? -4 : 0,
+              opacity: bead.active ? 1 : 0.4,
+              scale: bead.active ? 1 : 0.85,
+              y: bead.active ? -3 : 2,
             }}
-            transition={{ type: "spring", stiffness: 400, damping: 22 }}
+            transition={{
+              type: "spring",
+              stiffness: 380,
+              damping: 24,
+              layout: { duration: 0.3 },
+            }}
             className={[
-              "relative h-9 w-9 rounded-full bg-gradient-to-b ring-1 ring-black/10 sm:h-11 sm:w-11",
-              groupStyles[bead.group],
-              bead.removed ? "line-through" : "",
+              "h-6 w-6 rounded-full bg-gradient-to-b ring-1 ring-black/10 sm:h-8 sm:w-8",
+              bead.active ? activeGradient : inactiveGradient,
+              !bead.active && "shadow-none",
             ].join(" ")}
-            aria-label={`Bead ${idx + 1}`}
-          >
-            {bead.removed && (
-              <span className="pointer-events-none absolute inset-0 grid place-items-center text-2xl font-black text-red-600">
-                ✕
-              </span>
-            )}
-            {bead.flicked && !bead.removed && (
-              <span className="pointer-events-none absolute -top-1 -right-1 h-3 w-3 rounded-full bg-yellow-300 ring-2 ring-white" />
-            )}
-          </motion.button>
+            aria-label={`Bead ${bead.id + 1}`}
+          />
         ))}
       </div>
     </div>
