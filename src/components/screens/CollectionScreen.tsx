@@ -1,8 +1,10 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { SprunkiAvatar } from "@/components/SprunkiAvatar";
 import { BigButton } from "@/components/BigButton";
 import { sprunkies } from "@/lib/sprunkies";
+import { mixer } from "@/lib/sprunkiMixer";
+import { music } from "@/lib/music";
 import type { UseGameState } from "@/hooks/useGameState";
 import type { Sprunki } from "@/types";
 import type { Screen } from "@/components/MathQuestApp";
@@ -28,48 +30,96 @@ const rarityBadge: Record<string, string> = {
 
 export function CollectionScreen({ game, go }: Props) {
   const [open, setOpen] = useState<Sprunki | null>(null);
+  const [activeIds, setActiveIds] = useState<Set<string>>(new Set());
+
+  // Pause background music while the mixer is the main audio stage.
+  useEffect(() => {
+    music.stop();
+    return () => {
+      mixer.reset();
+    };
+  }, []);
+
+  useEffect(() => mixer.subscribe(setActiveIds), []);
 
   return (
     <div className="flex flex-col gap-6">
-      <header className="flex items-center justify-between">
+      <header className="flex items-center justify-between gap-3">
         <button
           onClick={() => go("home")}
           className="rounded-full bg-card px-4 py-2 text-sm font-bold ring-1 ring-border shadow-sm hover:bg-accent"
         >
           ← Home
         </button>
-        <h2 className="text-2xl font-black sm:text-3xl">Collection</h2>
-        <div className="text-sm font-bold text-muted-foreground">
-          {game.unlockedSprunkies.length} / {sprunkies.length}
-        </div>
+        <h2 className="text-2xl font-black sm:text-3xl">Jam Room</h2>
+        <button
+          onClick={() => mixer.reset()}
+          disabled={activeIds.size === 0}
+          className="rounded-full bg-rose-500 px-4 py-2 text-sm font-black text-white shadow-sm hover:bg-rose-600 disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          ⟲ Reset
+        </button>
       </header>
+
+      <p className="text-center text-sm font-bold text-muted-foreground">
+        {game.unlockedSprunkies.length} / {sprunkies.length} collected · Tap a Sprunki to loop · Tap again to stop
+        {activeIds.size > 0 && <> · <span className="text-emerald-600">{activeIds.size} jamming</span></>}
+      </p>
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
         {sprunkies.map((s) => {
           const prog = game.state.sprunkiProgress[s.id];
           const unlocked = !!prog?.unlockedAt;
+          const playing = activeIds.has(s.id);
           return (
-            <motion.button
+            <motion.div
               key={s.id}
               whileHover={{ y: -4 }}
-              whileTap={{ scale: 0.97 }}
-              onClick={() => setOpen(s)}
-              className={`flex flex-col items-center gap-3 rounded-3xl bg-card p-4 shadow-sm ring-2 ${rarityRing[s.rarity]} transition-all hover:shadow-md`}
-              aria-label={unlocked ? s.name : "Locked Sprunki"}
+              className={`relative flex flex-col items-center gap-3 rounded-3xl bg-card p-4 shadow-sm ring-2 transition-all hover:shadow-md ${
+                playing ? "ring-emerald-400 ring-4 shadow-lg" : rarityRing[s.rarity]
+              }`}
             >
-              <SprunkiAvatar sprunki={s} size={96} locked={!unlocked} idle={unlocked} />
-              <div className="text-center">
-                <p className="text-base font-black leading-tight">
-                  {unlocked ? s.name : "???"}
-                </p>
-                <span className={`mt-1 inline-block rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-widest ${rarityBadge[s.rarity]}`}>
-                  {s.rarity}
+              <motion.button
+                onClick={() => {
+                  if (!unlocked) return;
+                  mixer.toggle(s.id, s.icon);
+                }}
+                onDoubleClick={() => unlocked && mixer.accent(s.icon)}
+                whileTap={{ scale: 0.95 }}
+                animate={playing ? { scale: [1, 1.06, 1] } : { scale: 1 }}
+                transition={playing ? { duration: 0.6, repeat: Infinity } : { duration: 0.2 }}
+                className="flex flex-col items-center gap-3"
+                aria-label={unlocked ? `${playing ? "Stop" : "Play"} ${s.name}` : "Locked Sprunki"}
+              >
+                <SprunkiAvatar sprunki={s} size={96} locked={!unlocked} idle={unlocked} />
+                <div className="text-center">
+                  <p className="text-base font-black leading-tight">
+                    {unlocked ? s.name : "???"}
+                  </p>
+                  <span className={`mt-1 inline-block rounded-full px-2 py-0.5 text-[10px] font-black uppercase tracking-widest ${rarityBadge[s.rarity]}`}>
+                    {s.rarity}
+                  </span>
+                </div>
+              </motion.button>
+              {unlocked && (
+                <button
+                  onClick={() => setOpen(s)}
+                  className="absolute right-2 top-2 grid h-7 w-7 place-items-center rounded-full bg-muted text-xs font-black text-muted-foreground hover:bg-accent"
+                  aria-label={`${s.name} info`}
+                >
+                  i
+                </button>
+              )}
+              {playing && (
+                <span className="absolute -top-2 left-1/2 -translate-x-1/2 rounded-full bg-emerald-500 px-2 py-0.5 text-[10px] font-black uppercase tracking-widest text-white shadow">
+                  ♪ Loop
                 </span>
-              </div>
-            </motion.button>
+              )}
+            </motion.div>
           );
         })}
       </div>
+
 
       <AnimatePresence>
         {open && (
