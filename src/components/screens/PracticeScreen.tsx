@@ -165,7 +165,7 @@ export function PracticeScreen({ game, go }: Props) {
                 exit={{ opacity: 0, height: 0 }}
                 transition={{ duration: 0.25 }}
               >
-                <CountingBeads a={problem.a} b={problem.b} operation={problem.operation} />
+                <CountingBeads a={problem.a} b={problem.b} operation={problem.operation} solved={status === "correct"} />
               </motion.div>
             )}
           </AnimatePresence>
