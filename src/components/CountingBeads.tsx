@@ -2,12 +2,15 @@ import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import type { Operation } from "@/types";
 import { Lightbulb } from "lucide-react";
+import { getSecondSprunkiAudioUrl } from "@/lib/sprunkiAudio";
+import { music } from "@/lib/music";
 
 interface Props {
   a: number;
   b: number;
   operation: Operation;
   solved?: boolean;
+  guideIcon?: string;
 }
 
 interface Bead {
@@ -22,7 +25,7 @@ function buildRow(): Bead[] {
   }));
 }
 
-export function CountingBeads({ operation, solved }: Props) {
+export function CountingBeads({ operation, solved, guideIcon }: Props) {
   const [topRow, setTopRow] = useState<Bead[]>(() => buildRow());
   const [bottomRow, setBottomRow] = useState<Bead[]>(() => buildRow());
 
