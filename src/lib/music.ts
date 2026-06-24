@@ -85,4 +85,12 @@ export const music = {
       void audio.play().catch(() => {});
     }
   },
+
+  /** Play a one-shot sound effect without interrupting the background loop. */
+  playEffect(url: string) {
+    if (muted || typeof window === "undefined") return;
+    const el = new Audio(url);
+    el.volume = 0.35;
+    void el.play().catch(() => {});
+  },
 };
