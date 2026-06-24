@@ -6,8 +6,8 @@ import { getLongerSprunkiAudioUrl, getFirstSprunkiAudioUrl } from "./sprunkiAudi
 
 type Listener = (active: Set<string>) => void;
 
-const elements = new Map<string, HTMLAudioElement>();
-const active = new Set<string>();
+const elements = new Map<number, HTMLAudioElement>();
+const active = new Set<number>();
 const listeners = new Set<Listener>();
 let muted = false;
 
