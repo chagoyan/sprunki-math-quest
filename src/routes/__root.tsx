@@ -11,7 +11,6 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
-import { registerPWA } from "../lib/pwa-register";
 
 function NotFoundComponent() {
   return (
@@ -78,22 +77,21 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { name: "theme-color", content: "#10b981" },
-      { name: "apple-mobile-web-app-capable", content: "yes" },
-      { name: "apple-mobile-web-app-status-bar-style", content: "default" },
-      { name: "apple-mobile-web-app-title", content: "MathQuest" },
-      { title: "MathQuest" },
-      { name: "description", content: "A fun math practice game for kids." },
-      { property: "og:title", content: "MathQuest" },
-      { property: "og:description", content: "A fun math practice game for kids." },
+      { title: "Lovable App" },
+      { name: "description", content: "Sprunki Math Adventures is a fun, engaging game for kids to practice addition." },
+      { name: "author", content: "Lovable" },
+      { property: "og:title", content: "Lovable App" },
+      { property: "og:description", content: "Sprunki Math Adventures is a fun, engaging game for kids to practice addition." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
+      { name: "twitter:site", content: "@Lovable" },
+      { name: "twitter:title", content: "Lovable App" },
+      { name: "twitter:description", content: "Sprunki Math Adventures is a fun, engaging game for kids to practice addition." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/63516149-b68d-4be4-b228-4ad195671242/id-preview-0d356426--4474381c-1283-4203-9fa4-be2afa12c4e2.lovable.app-1782336328041.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/63516149-b68d-4be4-b228-4ad195671242/id-preview-0d356426--4474381c-1283-4203-9fa4-be2afa12c4e2.lovable.app-1782336328041.png" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
-      { rel: "manifest", href: "/manifest.webmanifest" },
-      { rel: "icon", href: "/favicon.png", type: "image/png" },
-      { rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
@@ -124,10 +122,6 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
-
-  useEffect(() => {
-    void registerPWA();
-  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
