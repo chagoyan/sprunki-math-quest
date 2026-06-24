@@ -21,7 +21,7 @@ function buildRow(): Bead[] {
   }));
 }
 
-export function CountingBeads({ operation }: Props) {
+export function CountingBeads({ operation, solved }: Props) {
   const [topRow, setTopRow] = useState<Bead[]>(() => buildRow());
   const [bottomRow, setBottomRow] = useState<Bead[]>(() => buildRow());
 
@@ -29,6 +29,13 @@ export function CountingBeads({ operation }: Props) {
     setTopRow(buildRow());
     setBottomRow(buildRow());
   }, [operation]);
+
+  useEffect(() => {
+    if (solved) {
+      setTopRow(buildRow());
+      setBottomRow(buildRow());
+    }
+  }, [solved]);
 
   const toggleTop = (id: number) => {
     setTopRow((prev) =>
