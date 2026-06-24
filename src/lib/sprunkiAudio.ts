@@ -69,3 +69,9 @@ export function getRandomSprunkiAudioUrl(icon?: string): string | undefined {
   const all = Object.values(TRACKS).flat();
   return all[Math.floor(Math.random() * all.length)]?.url;
 }
+
+/** Returns the second track URL for a character, if it has one. */
+export function getSecondSprunkiAudioUrl(icon: string): string | undefined {
+  const urls = TRACKS[baseName(icon)] ?? [];
+  return urls[1]?.url;
+}
