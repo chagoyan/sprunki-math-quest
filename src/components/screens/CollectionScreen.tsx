@@ -75,7 +75,7 @@ export function CollectionScreen({ game, go }: Props) {
             <motion.div
               key={s.id}
               whileHover={{ y: -4 }}
-              className={`relative flex flex-col items-center gap-3 rounded-3xl bg-card p-4 shadow-sm ring-2 transition-all hover:shadow-md ${
+              className={`relative flex flex-col items-center gap-3 rounded-3xl bg-card p-4 shadow-sm ring-2 transition-all ${
                 playing ? "ring-emerald-400 ring-4 shadow-lg" : rarityRing[s.rarity]
               }`}
             >
@@ -144,7 +144,7 @@ export function CollectionScreen({ game, go }: Props) {
                     whileTap={{ scale: 0.85 }}
                     whileHover={{ y: -2 }}
                     onClick={() => mixer.accent(s.icon)}
-                    className="flex flex-col items-center gap-1 rounded-2xl bg-emerald-50 px-3 py-2 ring-1 ring-emerald-200 hover:bg-emerald-100 active:bg-emerald-200"
+                    className="flex flex-col items-center gap-1 rounded-2xl bg-emerald-50 px-3 py-2 ring-1 ring-emerald-200 active:bg-emerald-200"
                     aria-label={`Play ${s.name} accent`}
                   >
                     <SprunkiAvatar sprunki={s} size={48} idle />
