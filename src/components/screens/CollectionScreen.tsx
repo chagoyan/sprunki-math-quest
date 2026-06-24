@@ -84,7 +84,6 @@ export function CollectionScreen({ game, go }: Props) {
                   if (!unlocked) return;
                   mixer.toggle(s.id, s.icon);
                 }}
-                onDoubleClick={() => unlocked && mixer.accent(s.icon)}
                 whileTap={{ scale: 0.95 }}
                 animate={playing ? { scale: [1, 1.06, 1] } : { scale: 1 }}
                 transition={playing ? { duration: 0.6, repeat: Infinity } : { duration: 0.2 }}
