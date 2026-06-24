@@ -16,6 +16,11 @@ export function MathQuestApp() {
   const game = useGameState();
   const startedRef = useRef(false);
 
+  // Preload all Sprunki audio on mount so taps respond instantly.
+  useEffect(() => {
+    music.preloadAll();
+  }, []);
+
   // Start music after first user interaction (browser autoplay policy).
   useEffect(() => {
     const onInteraction = () => {
