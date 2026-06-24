@@ -30,7 +30,7 @@ const rarityBadge: Record<string, string> = {
 
 export function CollectionScreen({ game, go }: Props) {
   const [open, setOpen] = useState<Sprunki | null>(null);
-  const [activeIds, setActiveIds] = useState<Set<string>>(new Set());
+  const [activeIds, setActiveIds] = useState<Set<number>>(new Set());
 
   // Pause background music while the mixer is the main audio stage.
   useEffect(() => {
