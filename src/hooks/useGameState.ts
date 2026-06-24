@@ -25,12 +25,19 @@ export interface AnswerResult {
 }
 
 export function useGameState() {
-  const [state, setState] = useState<GameState>(() => hydrate(localStorageAdapter.load()));
+  const [state, setState] = useState<GameState>(() => hydrate(defaultState));
+  const [hydrated, setHydrated] = useState(false);
   const sessionStartRef = useRef<number>(Date.now());
 
   useEffect(() => {
-    localStorageAdapter.save(state);
-  }, [state]);
+    const saved = localStorageAdapter.load();
+    setState((prev) => hydrate({ ...prev, ...saved, settings: { ...prev.settings, ...saved.settings }, sprunkiProgress: { ...prev.sprunkiProgress, ...saved.sprunkiProgress } }));
+    setHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (hydrated) localStorageAdapter.save(state);
+  }, [state, hydrated]);
 
   // Track play-time only while tab is visible.
   useEffect(() => {
