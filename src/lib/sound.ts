@@ -1,5 +1,6 @@
 // Lightweight WebAudio sound effects — no asset downloads required.
 let ctx: AudioContext | null = null;
+let isMuted = false;
 
 function getCtx(): AudioContext | null {
   if (typeof window === "undefined") return null;
@@ -12,6 +13,7 @@ function getCtx(): AudioContext | null {
 }
 
 function tone(freq: number, duration: number, type: OscillatorType = "sine", gain = 0.15, when = 0) {
+  if (isMuted) return;
   const ac = getCtx();
   if (!ac) return;
   const osc = ac.createOscillator();
@@ -44,5 +46,8 @@ export const sound = {
   },
   unlock() {
     [392, 523, 659, 784, 988].forEach((f, i) => tone(f, 0.16, "sine", 0.18, i * 0.08));
+  },
+  setMuted(muted: boolean) {
+    isMuted = muted;
   },
 };
