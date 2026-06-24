@@ -70,8 +70,14 @@ export function getRandomSprunkiAudioUrl(icon?: string): string | undefined {
   return all[Math.floor(Math.random() * all.length)]?.url;
 }
 
-/** Returns the second track URL for a character, if it has one. */
-export function getSecondSprunkiAudioUrl(icon: string): string | undefined {
+/** Returns the first (shorter) track URL for a character. */
+export function getFirstSprunkiAudioUrl(icon: string): string | undefined {
   const urls = TRACKS[baseName(icon)] ?? [];
-  return urls[1]?.url;
+  return urls[0]?.url;
+}
+
+/** Returns the second (longer) track URL for a character, or the first if only one exists. */
+export function getLongerSprunkiAudioUrl(icon: string): string | undefined {
+  const urls = TRACKS[baseName(icon)] ?? [];
+  return urls[1]?.url ?? urls[0]?.url;
 }
