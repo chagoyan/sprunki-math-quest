@@ -13,21 +13,21 @@ interface Bead {
   active: boolean;
 }
 
-function buildRow(count: number): Bead[] {
+function buildRow(): Bead[] {
   return Array.from({ length: 10 }, (_, i) => ({
     id: i,
-    active: i < Math.min(count, 10),
+    active: false,
   }));
 }
 
-export function CountingBeads({ a, b, operation }: Props) {
-  const [topRow, setTopRow] = useState<Bead[]>(() => buildRow(a));
-  const [bottomRow, setBottomRow] = useState<Bead[]>(() => buildRow(b));
+export function CountingBeads({ operation }: Props) {
+  const [topRow, setTopRow] = useState<Bead[]>(() => buildRow());
+  const [bottomRow, setBottomRow] = useState<Bead[]>(() => buildRow());
 
   useEffect(() => {
-    setTopRow(buildRow(a));
-    setBottomRow(buildRow(b));
-  }, [a, b]);
+    setTopRow(buildRow());
+    setBottomRow(buildRow());
+  }, [operation]);
 
   const toggleTop = (id: number) => {
     setTopRow((prev) =>
