@@ -37,6 +37,9 @@ import pinki_full from "@/assets/sprunki-full/pinki.svg.asset.json";
 import raddy_full from "@/assets/sprunki-full/raddy.svg.asset.json";
 import simon_full from "@/assets/sprunki-full/simon.svg.asset.json";
 import sky_full from "@/assets/sprunki-full/sky.svg.asset.json";
+import tunner_full from "@/assets/sprunki-full/tunner.svg.asset.json";
+import vineria_full from "@/assets/sprunki-full/vineria.svg.asset.json";
+import wenda_full from "@/assets/sprunki-full/wenda.svg.asset.json";
 
 type AssetRef = { url: string };
 
@@ -54,7 +57,8 @@ const FULL: Record<string, AssetRef> = {
   funbot: funbot_full, garnold: garnold_full, gray: gray_full, jevin: jevin_full,
   mrfuncomputer: mrfuncomputer_full, mrsun: mrsun_full, mrtree: mrtree_full,
   oren: oren_full, owakcx: owakcx_full, pinki: pinki_full, raddy: raddy_full,
-  simon: simon_full, sky: sky_full,
+  simon: simon_full, sky: sky_full, tunner: tunner_full, vineria: vineria_full,
+  wenda: wenda_full,
 };
 
 const baseName = (icon: string) => icon.replace(/\.[a-z0-9]+$/i, "").toLowerCase();
