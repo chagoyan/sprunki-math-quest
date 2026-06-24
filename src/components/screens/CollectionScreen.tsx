@@ -30,7 +30,7 @@ const rarityBadge: Record<string, string> = {
 
 export function CollectionScreen({ game, go }: Props) {
   const [open, setOpen] = useState<Sprunki | null>(null);
-  const [activeIds, setActiveIds] = useState<Set<string>>(new Set());
+  const [activeIds, setActiveIds] = useState<Set<number>>(new Set());
 
   // Pause background music while the mixer is the main audio stage.
   useEffect(() => {
@@ -84,7 +84,6 @@ export function CollectionScreen({ game, go }: Props) {
                   if (!unlocked) return;
                   mixer.toggle(s.id, s.icon);
                 }}
-                onDoubleClick={() => unlocked && mixer.accent(s.icon)}
                 whileTap={{ scale: 0.95 }}
                 animate={playing ? { scale: [1, 1.06, 1] } : { scale: 1 }}
                 transition={playing ? { duration: 0.6, repeat: Infinity } : { duration: 0.2 }}
@@ -119,6 +118,47 @@ export function CollectionScreen({ game, go }: Props) {
           );
         })}
       </div>
+
+      <AnimatePresence>
+        {activeIds.size > 0 && (
+          <motion.div
+            initial={{ y: 80, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 80, opacity: 0 }}
+            className="sticky bottom-4 z-40 mx-auto w-full max-w-3xl rounded-3xl bg-card/95 p-3 shadow-2xl ring-2 ring-emerald-400 backdrop-blur"
+          >
+            <div className="mb-2 flex items-center justify-between px-2">
+              <p className="text-xs font-black uppercase tracking-widest text-emerald-700">
+                ♪ Performance Pads — tap to stab
+              </p>
+              <span className="text-[10px] font-bold text-muted-foreground">
+                {activeIds.size} active
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {sprunkies
+                .filter((s) => activeIds.has(s.id))
+                .map((s) => (
+                  <motion.button
+                    key={s.id}
+                    whileTap={{ scale: 0.85 }}
+                    whileHover={{ y: -2 }}
+                    onClick={() => mixer.accent(s.icon)}
+                    className="flex flex-col items-center gap-1 rounded-2xl bg-emerald-50 px-3 py-2 ring-1 ring-emerald-200 hover:bg-emerald-100 active:bg-emerald-200"
+                    aria-label={`Play ${s.name} accent`}
+                  >
+                    <SprunkiAvatar sprunki={s} size={48} idle />
+                    <span className="text-[10px] font-black uppercase tracking-wider">
+                      {s.name}
+                    </span>
+                  </motion.button>
+                ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+
 
 
       <AnimatePresence>
