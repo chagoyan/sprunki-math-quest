@@ -1,93 +1,88 @@
 /*
- * Kid-friendly generative background music via Web Audio API.
- * Plays a soft pentatonic loop until stop() is called.
- * Will be replaced with real audio files when the user adds them.
+ * Background music player: loops a Sprunki character audio track.
+ * Use music.play(icon?) to swap to a specific character's loop,
+ * music.start() to (re)start the current/random loop,
+ * music.stop() to pause, music.setMuted() to mute.
  */
+import { getRandomSprunkiAudioUrl } from "./sprunkiAudio";
 
-let ac: AudioContext | null = null;
-let intervalId: number | null = null;
-let isPlaying = false;
+let audio: HTMLAudioElement | null = null;
+let currentUrl: string | null = null;
+let muted = false;
+let wantPlaying = false;
 
-const PENTATONIC = [523.25, 587.33, 659.25, 783.99, 880.0]; // C5, D5, E5, G5, A5
-const LOW_PENTATONIC = [261.63, 293.66, 329.63, 392.0, 440.0]; // C4, D4, E4, G4, A4
-
-function getCtx(): AudioContext | null {
+function ensureAudio(): HTMLAudioElement | null {
   if (typeof window === "undefined") return null;
-  if (!ac) {
-    const Ctor = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-    if (!Ctor) return null;
-    ac = new Ctor();
+  if (!audio) {
+    audio = new Audio();
+    audio.loop = true;
+    audio.volume = 0.35;
+    audio.preload = "auto";
   }
-  return ac;
+  return audio;
 }
 
-function playNote(freq: number, duration: number, startTime: number, gain = 0.04, type: OscillatorType = "triangle") {
-  const context = ac;
-  if (!context) return;
-  const osc = context.createOscillator();
-  const g = context.createGain();
-  osc.type = type;
-  osc.frequency.setValueAtTime(freq, startTime);
-  g.gain.setValueAtTime(0, startTime);
-  g.gain.linearRampToValueAtTime(gain, startTime + 0.05);
-  g.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
-  osc.connect(g).connect(context.destination);
-  osc.start(startTime);
-  osc.stop(startTime + duration + 0.02);
-}
-
-function playChord(freqs: number[], duration: number, startTime: number) {
-  freqs.forEach((f, i) => playNote(f, duration, startTime + i * 0.02, 0.025, "sine"));
-}
-
-function nextPhrase() {
-  const context = getCtx();
-  if (!context || !isPlaying) return;
-
-  const now = context.currentTime;
-  const beat = 0.4; // BPM ~150 but soft and gentle
-
-  // Melody line using pentatonic notes
-  const melody = [
-    PENTATONIC[0], PENTATONIC[1], PENTATONIC[2], PENTATONIC[1],
-    PENTATONIC[0], PENTATONIC[2], PENTATONIC[3], PENTATONIC[4],
-  ];
-
-  melody.forEach((freq, i) => {
-    playNote(freq, beat * 0.8, now + i * beat, 0.035, "triangle");
-  });
-
-  // Soft bass pad every other beat
-  [0, 2, 4, 6].forEach((i) => {
-    playChord([LOW_PENTATONIC[0], LOW_PENTATONIC[2]], beat * 1.5, now + i * beat);
-  });
+function setSrc(url: string) {
+  const el = ensureAudio();
+  if (!el) return;
+  if (currentUrl !== url) {
+    currentUrl = url;
+    el.src = url;
+  }
 }
 
 export const music = {
+  /** Start (or resume) the background music. Picks a random track if none set. */
   start() {
-    if (isPlaying) return;
-    const context = getCtx();
-    if (!context) return;
-    isPlaying = true;
-    nextPhrase();
-    intervalId = window.setInterval(nextPhrase, 3200);
+    const el = ensureAudio();
+    if (!el) return;
+    wantPlaying = true;
+    if (muted) return;
+    if (!currentUrl) {
+      const url = getRandomSprunkiAudioUrl();
+      if (!url) return;
+      setSrc(url);
+    }
+    void el.play().catch(() => {
+      // Autoplay blocked; will retry after user interaction.
+    });
   },
 
-  stop() {
-    isPlaying = false;
-    if (intervalId !== null) {
-      window.clearInterval(intervalId);
-      intervalId = null;
+  /** Play a specific character's loop. */
+  play(icon?: string) {
+    const url = getRandomSprunkiAudioUrl(icon);
+    if (!url) return;
+    setSrc(url);
+    this.start();
+  },
+
+  /** Swap to a different random track. */
+  next() {
+    const url = getRandomSprunkiAudioUrl();
+    if (!url) return;
+    setSrc(url);
+    if (wantPlaying && !muted) {
+      const el = ensureAudio();
+      void el?.play().catch(() => {});
     }
   },
 
-  get isPlaying() {
-    return isPlaying;
+  stop() {
+    wantPlaying = false;
+    audio?.pause();
   },
 
-  setMuted(muted: boolean) {
-    if (muted) {
-      this.stop();
+  get isPlaying() {
+    return !!audio && !audio.paused;
+  },
+
+  setMuted(m: boolean) {
+    muted = m;
+    if (!audio) return;
+    if (m) {
+      audio.pause();
+    } else if (wantPlaying) {
+      void audio.play().catch(() => {});
     }
   },
 };
