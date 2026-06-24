@@ -6,6 +6,7 @@ interface Props {
   a: number;
   b: number;
   operation: Operation;
+  solved?: boolean;
 }
 
 interface Bead {
