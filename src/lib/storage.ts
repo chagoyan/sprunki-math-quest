@@ -19,6 +19,7 @@ export const defaultState: GameState = {
     animationSpeed: "normal",
     darkMode: false,
     parentPassword: "1234",
+    muted: false,
   },
   version: 1,
 };
