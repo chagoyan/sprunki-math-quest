@@ -4,7 +4,7 @@
  * music.start() to (re)start the current/random loop,
  * music.stop() to pause, music.setMuted() to mute.
  */
-import { getRandomSprunkiAudioUrl } from "./sprunkiAudio";
+import { getRandomSprunkiAudioUrl, getLongerSprunkiAudioUrl } from "./sprunkiAudio";
 
 let audio: HTMLAudioElement | null = null;
 let currentUrl: string | null = null;
@@ -48,9 +48,9 @@ export const music = {
     });
   },
 
-  /** Play a specific character's loop. */
+  /** Play a specific character's loop (prefers the longer track). */
   play(icon?: string) {
-    const url = getRandomSprunkiAudioUrl(icon);
+    const url = icon ? getLongerSprunkiAudioUrl(icon) : getRandomSprunkiAudioUrl();
     if (!url) return;
     setSrc(url);
     this.start();

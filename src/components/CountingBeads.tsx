@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import type { Operation } from "@/types";
 import { Lightbulb } from "lucide-react";
-import { getSecondSprunkiAudioUrl, getSprunkiAudioUrls } from "@/lib/sprunkiAudio";
+import { getFirstSprunkiAudioUrl, getSprunkiAudioUrls } from "@/lib/sprunkiAudio";
 import { music } from "@/lib/music";
 
 interface Props {
@@ -43,7 +43,7 @@ export function CountingBeads({ operation, solved, guideIcon }: Props) {
 
   const playBeadSound = () => {
     if (!guideIcon) return;
-    const url = getSecondSprunkiAudioUrl(guideIcon);
+    const url = getFirstSprunkiAudioUrl(guideIcon);
     if (url) music.playEffect(url);
   };
 
