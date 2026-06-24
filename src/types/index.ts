@@ -30,6 +30,7 @@ export interface Settings {
   animationSpeed: "slow" | "normal" | "fast";
   darkMode: boolean;
   parentPassword: string;
+  muted: boolean;
 }
 
 export interface GameState {

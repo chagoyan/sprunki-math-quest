@@ -84,4 +84,10 @@ export const music = {
   get isPlaying() {
     return isPlaying;
   },
+
+  setMuted(muted: boolean) {
+    if (muted) {
+      this.stop();
+    }
+  },
 };
