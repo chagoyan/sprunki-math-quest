@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import type { Operation } from "@/types";
 import { Lightbulb } from "lucide-react";
-import { getSecondSprunkiAudioUrl } from "@/lib/sprunkiAudio";
+import { getSecondSprunkiAudioUrl, getSprunkiAudioUrls } from "@/lib/sprunkiAudio";
 import { music } from "@/lib/music";
 
 interface Props {
