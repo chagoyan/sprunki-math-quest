@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import type { Operation } from "@/types";
 import { Lightbulb } from "lucide-react";
-import { getSecondSprunkiAudioUrl } from "@/lib/sprunkiAudio";
+import { getSecondSprunkiAudioUrl, getSprunkiAudioUrls } from "@/lib/sprunkiAudio";
 import { music } from "@/lib/music";
 
 interface Props {
@@ -75,7 +75,11 @@ export function CountingBeads({ operation, solved, guideIcon }: Props) {
     <div className="rounded-[1.5rem] bg-gradient-to-b from-[oklch(0.9_0.04_75)] to-[oklch(0.82_0.06_70)] p-3 ring-1 ring-[oklch(0.6_0.1_60)]/25 shadow-inner sm:p-4">
       {/* Counter header */}
       <div className="mb-3 flex items-center justify-between text-xs font-bold uppercase tracking-widest text-[oklch(0.4_0.06_60)]">
-        <span>Tap beads to count!</span>
+        <span>
+          {guideIcon && getSprunkiAudioUrls(guideIcon).length >= 2
+            ? "Tap beads to count! Tap beats to make music!"
+            : "Tap beads to count!"}
+        </span>
         <button
           type="button"
           onClick={() => setShowHint((v) => !v)}
