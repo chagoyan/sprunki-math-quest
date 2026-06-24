@@ -6,6 +6,7 @@ import { CountingBeads } from "@/components/CountingBeads";
 import { fireConfetti } from "@/components/ConfettiBurst";
 import { generateProblem, operationSymbol } from "@/lib/problems";
 import { sound } from "@/lib/sound";
+import { music } from "@/lib/music";
 import type { UseGameState } from "@/hooks/useGameState";
 import type { Problem, Sprunki } from "@/types";
 import type { Screen } from "@/components/MathQuestApp";
@@ -49,6 +50,14 @@ export function PracticeScreen({ game, go }: Props) {
   }, []);
 
   useEffect(() => () => { if (advanceTimer.current) window.clearTimeout(advanceTimer.current); }, []);
+
+  // Swap background music to the current guide's loop
+  useEffect(() => {
+    if (state.settings.music && !state.settings.muted) {
+      music.play(guide.icon);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [guide.icon]);
 
   const onAnswer = (choice: number) => {
     if (status === "correct") return;
