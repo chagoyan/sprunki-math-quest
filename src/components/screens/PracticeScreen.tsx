@@ -196,7 +196,7 @@ export function PracticeScreen({ game, go }: Props) {
                   onClick={() => onAnswer(choice)}
                   disabled={status === "correct"}
                   className={[
-                    "relative h-20 rounded-3xl text-3xl font-black tabular-nums transition-all sm:h-24 sm:text-4xl",
+                    "relative h-16 rounded-2xl text-2xl font-black tabular-nums transition-all sm:h-24 sm:rounded-3xl sm:text-4xl",
                     "focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[oklch(0.78_0.18_240)]/40",
                     isCorrect
                       ? "bg-gradient-to-b from-[oklch(0.86_0.18_145)] to-[oklch(0.66_0.22_150)] text-white shadow-[0_8px_0_oklch(0.46_0.18_150)]"
