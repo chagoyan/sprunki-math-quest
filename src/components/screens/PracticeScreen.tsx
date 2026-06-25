@@ -193,10 +193,17 @@ export function PracticeScreen({ game, go }: Props) {
                 <motion.button
                   key={choice}
                   whileTap={{ scale: 0.96 }}
-                  onClick={() => onAnswer(choice)}
+                  onPointerDown={(e) => {
+                    // Respond on pointerdown for instant visual + audio feedback.
+                    // Skip synthetic mouse events that follow touch.
+                    if (e.pointerType === "mouse" && e.button !== 0) return;
+                    e.preventDefault();
+                    onAnswer(choice);
+                  }}
                   disabled={status === "correct"}
+                  style={{ touchAction: "manipulation", WebkitTapHighlightColor: "transparent" }}
                   className={[
-                    "relative h-16 rounded-2xl text-2xl font-black tabular-nums transition-all sm:h-24 sm:rounded-3xl sm:text-4xl",
+                    "relative h-16 select-none rounded-2xl text-2xl font-black tabular-nums sm:h-24 sm:rounded-3xl sm:text-4xl",
                     "focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[oklch(0.78_0.18_240)]/40",
                     isCorrect
                       ? "bg-gradient-to-b from-[oklch(0.86_0.18_145)] to-[oklch(0.66_0.22_150)] text-white shadow-[0_8px_0_oklch(0.46_0.18_150)]"
