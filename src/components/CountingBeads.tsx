@@ -132,7 +132,7 @@ function AbacusRow({
       {/* Center divider */}
       <div className="pointer-events-none absolute top-1/2 left-1/2 z-0 h-7 w-0.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[oklch(0.55_0.08_60)]/40 sm:h-9" />
 
-      <div className="relative z-10 flex w-full items-center justify-between gap-1 sm:gap-2">
+      <div className="relative z-10 flex w-full items-center justify-between gap-0.5 sm:gap-2">
         {beads.map((bead) => (
           <motion.button
             key={bead.id}
@@ -149,7 +149,7 @@ function AbacusRow({
               damping: 24,
             }}
             className={[
-              "relative h-8 w-8 rounded-full bg-gradient-to-b ring-1 ring-black/10 sm:h-10 sm:w-10",
+              "relative aspect-square w-full max-w-[2.5rem] rounded-full bg-gradient-to-b ring-1 ring-black/10",
               gradient,
             ].join(" ")}
             aria-label={`Bead ${bead.id + 1}`}
