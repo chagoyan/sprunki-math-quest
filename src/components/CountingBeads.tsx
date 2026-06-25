@@ -72,18 +72,18 @@ export function CountingBeads({ operation, solved, guideIcon }: Props) {
   const totalActive = operation === "subtraction" ? topActive : topActive + bottomActive;
 
   return (
-    <div className="rounded-[1.5rem] bg-gradient-to-b from-[oklch(0.9_0.04_75)] to-[oklch(0.82_0.06_70)] p-3 ring-1 ring-[oklch(0.6_0.1_60)]/25 shadow-inner sm:p-4">
+    <div className="rounded-[1.25rem] bg-gradient-to-b from-[oklch(0.9_0.04_75)] to-[oklch(0.82_0.06_70)] p-2 ring-1 ring-[oklch(0.6_0.1_60)]/25 shadow-inner sm:rounded-[1.5rem] sm:p-4">
       {/* Counter header */}
-      <div className="mb-3 flex items-center justify-between text-xs font-bold uppercase tracking-widest text-[oklch(0.4_0.06_60)]">
-        <span>
+      <div className="mb-2 flex items-center justify-between gap-2 text-[0.65rem] font-bold uppercase tracking-wider text-[oklch(0.4_0.06_60)] sm:mb-3 sm:text-xs sm:tracking-widest">
+        <span className="min-w-0 flex-1 truncate">
           {guideIcon && getSprunkiAudioUrls(guideIcon).length >= 2
-            ? "Tap beads to count! Tap beats to make music!"
+            ? "Tap beads to count!"
             : "Tap beads to count!"}
         </span>
         <button
           type="button"
           onClick={() => setShowHint((v) => !v)}
-          className="flex items-center gap-1 rounded-full bg-white/70 px-3 py-1 text-[oklch(0.3_0.06_60)] ring-1 ring-[oklch(0.6_0.1_60)]/15 tabular-nums hover:bg-white transition-colors"
+          className="flex shrink-0 items-center gap-1 rounded-full bg-white/70 px-2.5 py-1 text-[oklch(0.3_0.06_60)] ring-1 ring-[oklch(0.6_0.1_60)]/15 tabular-nums hover:bg-white transition-colors sm:px-3"
           aria-pressed={showHint}
         >
           <Lightbulb className="h-3 w-3" />
@@ -92,7 +92,7 @@ export function CountingBeads({ operation, solved, guideIcon }: Props) {
       </div>
 
       {/* Abacus frame */}
-      <div className="flex flex-col gap-2 rounded-2xl bg-[oklch(0.78_0.08_65)]/40 p-3 ring-1 ring-[oklch(0.6_0.08_60)]/20 sm:gap-3 sm:p-4">
+      <div className="flex flex-col gap-1.5 rounded-xl bg-[oklch(0.78_0.08_65)]/40 p-2 ring-1 ring-[oklch(0.6_0.08_60)]/20 sm:gap-3 sm:rounded-2xl sm:p-4">
         {/* Row 1 — warm/amber beads */}
         <AbacusRow
           beads={topRow}
