@@ -147,11 +147,11 @@ export function PracticeScreen({ game, go }: Props) {
           </AnimatePresence>
         </div>
 
-        <div className="flex flex-col gap-6">
-          <p className="text-center text-sm font-bold uppercase tracking-widest text-muted-foreground sm:text-left">
+        <div className="flex flex-col gap-4 sm:gap-6">
+          <p className="text-center text-xs font-bold uppercase tracking-widest text-muted-foreground sm:text-left sm:text-sm">
             Solve the problem
           </p>
-          <div className="text-center text-[clamp(3rem,10vw,6rem)] font-black leading-none tracking-tight sm:text-left">
+          <div className="text-center text-[clamp(2.5rem,12vw,6rem)] font-black leading-none tracking-tight sm:text-left">
             <span className="tabular-nums">{problem.a}</span>{" "}
             <span className="text-muted-foreground">{operationSymbol[problem.operation]}</span>{" "}
             <span className="tabular-nums">{problem.b}</span>{" "}
