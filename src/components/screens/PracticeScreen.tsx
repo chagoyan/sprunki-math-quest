@@ -98,22 +98,22 @@ export function PracticeScreen({ game, go }: Props) {
   const choices = useMemo(() => problem.choices, [problem]);
 
   return (
-    <div className="flex flex-col gap-6">
-      <header className="flex items-center justify-between">
+    <div className="flex flex-col gap-4 sm:gap-6">
+      <header className="flex items-center justify-between gap-2 pr-14 sm:pr-0">
         <button
           onClick={() => go("home")}
-          className="rounded-full bg-card px-4 py-2 text-sm font-bold ring-1 ring-border shadow-sm hover:bg-accent"
+          className="rounded-full bg-card px-3 py-2 text-xs font-bold ring-1 ring-border shadow-sm hover:bg-accent sm:px-4 sm:text-sm"
           aria-label="Back to home"
         >
           ← Home
         </button>
-        <div className="flex items-center gap-3 text-sm font-bold">
-          <span className="rounded-full bg-card px-3 py-1 ring-1 ring-border">⭐ Lv {state.level}</span>
-          <span className="rounded-full bg-card px-3 py-1 ring-1 ring-border">🔥 {state.streak}</span>
+        <div className="flex items-center gap-2 text-xs font-bold sm:gap-3 sm:text-sm">
+          <span className="rounded-full bg-card px-2.5 py-1 ring-1 ring-border sm:px-3">⭐ Lv {state.level}</span>
+          <span className="rounded-full bg-card px-2.5 py-1 ring-1 ring-border sm:px-3">🔥 {state.streak}</span>
         </div>
       </header>
 
-      <div className="h-3 w-full overflow-hidden rounded-full bg-muted">
+      <div className="h-2.5 w-full overflow-hidden rounded-full bg-muted sm:h-3">
         <motion.div
           className="h-full rounded-full bg-gradient-to-r from-[oklch(0.78_0.18_140)] to-[oklch(0.72_0.2_200)]"
           animate={{ width: `${pct}%` }}
@@ -123,10 +123,15 @@ export function PracticeScreen({ game, go }: Props) {
 
       <motion.div
         animate={cardControls}
-        className="relative grid items-center gap-6 rounded-[2rem] bg-card p-6 shadow-md ring-1 ring-border/60 sm:grid-cols-[auto_1fr] sm:gap-10 sm:p-10"
+        className="relative grid items-center gap-4 rounded-3xl bg-card p-4 shadow-md ring-1 ring-border/60 sm:grid-cols-[auto_1fr] sm:gap-10 sm:rounded-[2rem] sm:p-10"
       >
         <div className="grid place-items-center">
-          <SprunkiAvatar sprunki={guide} size={170} bouncing={status === "correct"} idle={status !== "correct"} />
+          <div className="sm:hidden">
+            <SprunkiAvatar sprunki={guide} size={110} bouncing={status === "correct"} idle={status !== "correct"} />
+          </div>
+          <div className="hidden sm:block">
+            <SprunkiAvatar sprunki={guide} size={170} bouncing={status === "correct"} idle={status !== "correct"} />
+          </div>
           <AnimatePresence>
             {status === "correct" && (
               <motion.div
@@ -142,11 +147,11 @@ export function PracticeScreen({ game, go }: Props) {
           </AnimatePresence>
         </div>
 
-        <div className="flex flex-col gap-6">
-          <p className="text-center text-sm font-bold uppercase tracking-widest text-muted-foreground sm:text-left">
+        <div className="flex flex-col gap-4 sm:gap-6">
+          <p className="text-center text-xs font-bold uppercase tracking-widest text-muted-foreground sm:text-left sm:text-sm">
             Solve the problem
           </p>
-          <div className="text-center text-[clamp(3rem,10vw,6rem)] font-black leading-none tracking-tight sm:text-left">
+          <div className="text-center text-[clamp(2.5rem,12vw,6rem)] font-black leading-none tracking-tight sm:text-left">
             <span className="tabular-nums">{problem.a}</span>{" "}
             <span className="text-muted-foreground">{operationSymbol[problem.operation]}</span>{" "}
             <span className="tabular-nums">{problem.b}</span>{" "}
@@ -191,7 +196,7 @@ export function PracticeScreen({ game, go }: Props) {
                   onClick={() => onAnswer(choice)}
                   disabled={status === "correct"}
                   className={[
-                    "relative h-20 rounded-3xl text-3xl font-black tabular-nums transition-all sm:h-24 sm:text-4xl",
+                    "relative h-16 rounded-2xl text-2xl font-black tabular-nums transition-all sm:h-24 sm:rounded-3xl sm:text-4xl",
                     "focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[oklch(0.78_0.18_240)]/40",
                     isCorrect
                       ? "bg-gradient-to-b from-[oklch(0.86_0.18_145)] to-[oklch(0.66_0.22_150)] text-white shadow-[0_8px_0_oklch(0.46_0.18_150)]"
