@@ -99,7 +99,7 @@ export function PracticeScreen({ game, go }: Props) {
 
   return (
     <div className="flex flex-col gap-4 sm:gap-6">
-      <header className="flex items-center justify-between gap-2">
+      <header className="flex items-center justify-between gap-2 pr-14 sm:pr-0">
         <button
           onClick={() => go("home")}
           className="rounded-full bg-card px-3 py-2 text-xs font-bold ring-1 ring-border shadow-sm hover:bg-accent sm:px-4 sm:text-sm"
