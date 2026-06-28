@@ -72,8 +72,6 @@ export function SharingVisual({
   const recipientRefs = useRef<Array<HTMLDivElement | null>>([]);
   const [hint, setHint] = useState<string>("");
   const [solved, setSolved] = useState(false);
-  const [debugLog, setDebugLog] = useState<string[]>([]);
-  const [debugPointer, setDebugPointer] = useState<{ x: number; y: number; hit: string | null } | null>(null);
   const [drag, setDrag] = useState<{
     itemId: number;
     pointerId: number;
@@ -93,11 +91,11 @@ export function SharingVisual({
     touchEnd: (event: TouchEvent) => void;
     touchCancel: (event: TouchEvent) => void;
   } | null>(null);
-  const pushDebug = useCallback((msg: string) => {
-    setDebugLog((prev) => {
-      const ts = new Date().toISOString().slice(14, 23);
-      return [`${ts} ${msg}`, ...prev].slice(0, 10);
-    });
+  const pushDebug = useCallback((_msg: string) => {
+    // debug logging removed
+  }, []);
+  const setDebugPointer = useCallback((_p: { x: number; y: number; hit: string | null } | null) => {
+    // debug pointer removed
   }, []);
 
   useEffect(() => {
@@ -466,46 +464,6 @@ export function SharingVisual({
         </motion.p>
       )}
 
-      {/* Debug overlay — verify pointer events, hit detection, counts */}
-      <div className="rounded-xl border-2 border-dashed border-fuchsia-400 bg-black/85 p-2 font-mono text-[10px] leading-tight text-fuchsia-100 sm:text-xs">
-        <div className="mb-1 flex flex-wrap gap-x-3 gap-y-0.5 font-bold text-fuchsia-300">
-          <span>DEBUG</span>
-          <span>pool={pool.length}/{total}</span>
-          <span>selected={selectedId ?? "—"}</span>
-          <span>hover={hoverRecipient ?? "—"}</span>
-          <span>solved={String(solved)}</span>
-          <span>counts=[{recipientCounts.join(",")}]</span>
-        </div>
-        <div className="mb-1 text-fuchsia-200">
-          pointer={debugPointer ? `(${Math.round(debugPointer.x)},${Math.round(debugPointer.y)}) → ${debugPointer.hit ?? "—"}` : "—"}
-        </div>
-        <div className="max-h-28 overflow-y-auto">
-          {debugLog.length === 0 ? (
-            <div className="opacity-50">no events yet — try dragging or tapping</div>
-          ) : (
-            debugLog.map((line, i) => <div key={i}>{line}</div>)
-          )}
-        </div>
-      </div>
-
-      {/* Live pointer crosshair when dragging */}
-      {debugPointer && (
-        <div
-          aria-hidden
-          style={{
-            position: "fixed",
-            left: debugPointer.x - 8,
-            top: debugPointer.y - 8,
-            width: 16,
-            height: 16,
-            borderRadius: "9999px",
-            border: "2px solid magenta",
-            background: "rgba(255,0,255,0.25)",
-            pointerEvents: "none",
-            zIndex: 9999,
-          }}
-        />
-      )}
 
       {drag && (
         <div
