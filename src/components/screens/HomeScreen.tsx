@@ -62,8 +62,40 @@ export function HomeScreen({ game, go }: Props) {
           <p className="text-lg text-muted-foreground">
             Ready to solve some math and unlock new friends?
           </p>
+
+          <fieldset className="rounded-2xl bg-accent/60 p-4 ring-1 ring-border/60">
+            <legend className="px-2 text-xs font-black uppercase tracking-widest text-muted-foreground">
+              Problem types
+            </legend>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              {OP_OPTIONS.map(({ op, label, symbol }) => {
+                const checked = selectedOps.includes(op);
+                return (
+                  <label
+                    key={op}
+                    className={`flex cursor-pointer items-center gap-2 rounded-xl px-3 py-2 ring-1 transition-colors ${
+                      checked
+                        ? "bg-foreground text-background ring-foreground"
+                        : "bg-card ring-border hover:bg-accent"
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4 accent-current"
+                      checked={checked}
+                      onChange={() => toggleOp(op)}
+                      aria-label={label}
+                    />
+                    <span className="text-lg font-black">{symbol}</span>
+                    <span className="text-sm font-bold">{label}</span>
+                  </label>
+                );
+              })}
+            </div>
+          </fieldset>
+
           <div className="flex flex-wrap gap-3 pt-2">
-            <BigButton size="xl" icon="▶" onClick={() => go("practice")}>
+            <BigButton size="xl" icon="▶" onClick={() => canPlay && go("practice")}>
               Play
             </BigButton>
             <BigButton variant="secondary" icon="✨" onClick={() => go("collection")}>
