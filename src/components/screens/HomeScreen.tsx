@@ -40,13 +40,22 @@ export function HomeScreen({ game, go }: Props) {
           </span>
           <span className="text-foreground">Quest</span>
         </motion.h1>
-        <button
-          onClick={() => go("parent")}
-          aria-label="Parent area"
-          className="rounded-full bg-card px-4 py-2 text-sm font-bold ring-1 ring-border shadow-sm hover:bg-accent"
-        >
-          👤 Parent
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => go("dndtest")}
+            aria-label="Drag and drop self-test"
+            className="rounded-full bg-card px-3 py-2 text-xs font-bold ring-1 ring-border shadow-sm hover:bg-accent"
+          >
+            🧪 DnD Test
+          </button>
+          <button
+            onClick={() => go("parent")}
+            aria-label="Parent area"
+            className="rounded-full bg-card px-4 py-2 text-sm font-bold ring-1 ring-border shadow-sm hover:bg-accent"
+          >
+            👤 Parent
+          </button>
+        </div>
       </header>
 
       <StatsBar state={game.state} xpPerLevel={game.XP_PER_LEVEL} />
