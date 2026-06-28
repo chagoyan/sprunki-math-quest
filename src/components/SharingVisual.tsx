@@ -85,6 +85,11 @@ export function SharingVisual({
   } | null>(null);
   const dragRef = useRef<typeof drag>(null);
   const activeButtonRef = useRef<HTMLButtonElement | null>(null);
+  const dragListenersRef = useRef<{
+    move: (event: PointerEvent) => void;
+    up: (event: PointerEvent) => void;
+    cancel: (event: PointerEvent) => void;
+  } | null>(null);
   const pushDebug = useCallback((msg: string) => {
     setDebugLog((prev) => {
       const ts = new Date().toISOString().slice(14, 23);
@@ -168,8 +173,18 @@ export function SharingVisual({
     dragRef.current = null;
   };
 
+  const removeDragListeners = useCallback(() => {
+    const listeners = dragListenersRef.current;
+    if (!listeners) return;
+    window.removeEventListener("pointermove", listeners.move, { capture: true });
+    window.removeEventListener("pointerup", listeners.up, { capture: true });
+    window.removeEventListener("pointercancel", listeners.cancel, { capture: true });
+    dragListenersRef.current = null;
+  }, []);
+
   const finishDrag = useCallback(
     (itemId: number, pointerId: number, x: number, y: number, moved: boolean, cancelled = false) => {
+      removeDragListeners();
       const button = activeButtonRef.current;
       try {
         if (button?.hasPointerCapture(pointerId)) button.releasePointerCapture(pointerId);
@@ -196,47 +211,12 @@ export function SharingVisual({
       pushDebug(`drop item #${itemId} @ (${Math.round(x)},${Math.round(y)}) → ${idx === null ? "MISS" : "#" + idx}`);
       if (idx !== null) assign(itemId, idx);
     },
-    [assign, pushDebug, recipientAtPoint],
+    [assign, pushDebug, recipientAtPoint, removeDragListeners],
   );
 
   useEffect(() => {
-    if (!drag) return;
-
-    const move = (event: PointerEvent) => {
-      const current = dragRef.current;
-      if (!current || event.pointerId !== current.pointerId) return;
-      event.preventDefault();
-      const dx = event.clientX - current.startX;
-      const dy = event.clientY - current.startY;
-      const moved = current.moved || Math.hypot(dx, dy) > 4;
-      const next = { ...current, x: event.clientX, y: event.clientY, moved };
-      dragRef.current = next;
-      setDrag(next);
-      if (moved) setHoverRecipient(recipientAtPoint(event.clientX, event.clientY));
-    };
-
-    const up = (event: PointerEvent) => {
-      const current = dragRef.current;
-      if (!current || event.pointerId !== current.pointerId) return;
-      event.preventDefault();
-      finishDrag(current.itemId, current.pointerId, event.clientX, event.clientY, current.moved);
-    };
-
-    const cancel = (event: PointerEvent) => {
-      const current = dragRef.current;
-      if (!current || event.pointerId !== current.pointerId) return;
-      finishDrag(current.itemId, current.pointerId, event.clientX, event.clientY, current.moved, true);
-    };
-
-    window.addEventListener("pointermove", move, { passive: false, capture: true });
-    window.addEventListener("pointerup", up, { passive: false, capture: true });
-    window.addEventListener("pointercancel", cancel, { capture: true });
-    return () => {
-      window.removeEventListener("pointermove", move, { capture: true });
-      window.removeEventListener("pointerup", up, { capture: true });
-      window.removeEventListener("pointercancel", cancel, { capture: true });
-    };
-  }, [drag, finishDrag, recipientAtPoint]);
+    return removeDragListeners;
+  }, [removeDragListeners]);
 
   const startDrag = (event: React.PointerEvent<HTMLButtonElement>, itemId: number) => {
     if (solved || dragRef.current) return;
@@ -261,6 +241,38 @@ export function SharingVisual({
     setDrag(next);
     setDebugPointer({ x: event.clientX, y: event.clientY, hit: "drag start" });
     pushDebug(`drag start item #${itemId}`);
+
+    const move = (moveEvent: PointerEvent) => {
+      const current = dragRef.current;
+      if (!current || moveEvent.pointerId !== current.pointerId) return;
+      moveEvent.preventDefault();
+      const dx = moveEvent.clientX - current.startX;
+      const dy = moveEvent.clientY - current.startY;
+      const moved = current.moved || Math.hypot(dx, dy) > 4;
+      const updated = { ...current, x: moveEvent.clientX, y: moveEvent.clientY, moved };
+      dragRef.current = updated;
+      setDrag(updated);
+      if (moved) setHoverRecipient(recipientAtPoint(moveEvent.clientX, moveEvent.clientY));
+    };
+
+    const up = (upEvent: PointerEvent) => {
+      const current = dragRef.current;
+      if (!current || upEvent.pointerId !== current.pointerId) return;
+      upEvent.preventDefault();
+      finishDrag(current.itemId, current.pointerId, upEvent.clientX, upEvent.clientY, current.moved);
+    };
+
+    const cancel = (cancelEvent: PointerEvent) => {
+      const current = dragRef.current;
+      if (!current || cancelEvent.pointerId !== current.pointerId) return;
+      finishDrag(current.itemId, current.pointerId, cancelEvent.clientX, cancelEvent.clientY, current.moved, true);
+    };
+
+    removeDragListeners();
+    dragListenersRef.current = { move, up, cancel };
+    window.addEventListener("pointermove", move, { passive: false, capture: true });
+    window.addEventListener("pointerup", up, { passive: false, capture: true });
+    window.addEventListener("pointercancel", cancel, { capture: true });
   };
 
   const pool = items.filter((it) => it.recipient === null);
