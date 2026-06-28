@@ -72,8 +72,6 @@ export function SharingVisual({
   const recipientRefs = useRef<Array<HTMLDivElement | null>>([]);
   const [hint, setHint] = useState<string>("");
   const [solved, setSolved] = useState(false);
-  const [debugLog, setDebugLog] = useState<string[]>([]);
-  const [debugPointer, setDebugPointer] = useState<{ x: number; y: number; hit: string | null } | null>(null);
   const [drag, setDrag] = useState<{
     itemId: number;
     pointerId: number;
