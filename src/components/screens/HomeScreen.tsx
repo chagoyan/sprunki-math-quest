@@ -4,11 +4,19 @@ import { SprunkiAvatar } from "@/components/SprunkiAvatar";
 import { StatsBar } from "@/components/StatsBar";
 import type { UseGameState } from "@/hooks/useGameState";
 import type { Screen } from "@/components/MathQuestApp";
+import type { Operation } from "@/types";
 
 interface Props {
   game: UseGameState;
   go: (s: Screen) => void;
 }
+
+const OP_OPTIONS: { op: Operation; label: string; symbol: string }[] = [
+  { op: "addition", label: "Addition", symbol: "+" },
+  { op: "subtraction", label: "Subtraction", symbol: "−" },
+  { op: "multiplication", label: "Multiplication", symbol: "×" },
+  { op: "division", label: "Division", symbol: "÷" },
+];
 
 export function HomeScreen({ game, go }: Props) {
   const featured = game.unlockedSprunkies[0] ?? game.unlockedSprunkies[0];
