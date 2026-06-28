@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { BigButton } from "@/components/BigButton";
+import { MultiplicationChart } from "@/components/MultiplicationChart";
 import type { UseGameState } from "@/hooks/useGameState";
 import type { Screen } from "@/components/MathQuestApp";
 
