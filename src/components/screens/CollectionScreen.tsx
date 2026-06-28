@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { SprunkiAvatar } from "@/components/SprunkiAvatar";
 import { BigButton } from "@/components/BigButton";
 import { sprunkies } from "@/lib/sprunkies";
+import { MultiplicationChart } from "@/components/MultiplicationChart";
 import { mixer } from "@/lib/sprunkiMixer";
 import { music } from "@/lib/music";
 import type { UseGameState } from "@/hooks/useGameState";
@@ -30,7 +31,10 @@ const rarityBadge: Record<string, string> = {
 
 export function CollectionScreen({ game, go }: Props) {
   const [open, setOpen] = useState<Sprunki | null>(null);
+  const [chartOpen, setChartOpen] = useState(false);
   const [activeIds, setActiveIds] = useState<Set<number>>(new Set());
+  const chartUnlocked = game.state.multiplicationChartUnlocked;
+  const multSolved = game.state.multiplicationSolved;
 
   // Pause background music while the mixer is the main audio stage.
   useEffect(() => {
