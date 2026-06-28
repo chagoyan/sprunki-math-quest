@@ -107,11 +107,29 @@ export function SharingVisual({
   }, []);
 
   const recipientAtPoint = useCallback((x: number, y: number) => {
+    if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
+
+    const target = document.elementFromPoint(x, y);
+    const recipientEl = target?.closest<HTMLElement>("[data-share-recipient]");
+    const recipientIndex = recipientEl?.dataset.shareRecipient;
+    if (recipientIndex !== undefined) {
+      const parsed = Number(recipientIndex);
+      if (Number.isInteger(parsed)) return parsed;
+    }
+
     for (let i = 0; i < recipientRefs.current.length; i++) {
       const el = recipientRefs.current[i];
       if (!el) continue;
       const r = el.getBoundingClientRect();
-      if (x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) return i;
+      const padding = 18;
+      if (
+        x >= r.left - padding &&
+        x <= r.right + padding &&
+        y >= r.top - padding &&
+        y <= r.bottom + padding
+      ) {
+        return i;
+      }
     }
     return null;
   }, []);
@@ -189,6 +207,7 @@ export function SharingVisual({
           return (
             <div
               key={i}
+              data-share-recipient={i}
               ref={(el) => {
                 recipientRefs.current[i] = el;
               }}
@@ -258,54 +277,105 @@ function DragObject({
   const stateRef = useRef({
     startX: 0,
     startY: 0,
+    pointerId: -1,
     dragging: false,
     moved: false,
   });
+  const callbacksRef = useRef({ onTap, onDrop, onDragMove });
+  const listenersRef = useRef<{
+    move: (event: PointerEvent) => void;
+    up: (event: PointerEvent) => void;
+    cancel: (event: PointerEvent) => void;
+  } | null>(null);
   const [offset, setOffset] = useState<{ x: number; y: number } | null>(null);
+
+  useEffect(() => {
+    callbacksRef.current = { onTap, onDrop, onDragMove };
+  }, [onTap, onDrop, onDragMove]);
+
+  const removeWindowListeners = useCallback(() => {
+    const listeners = listenersRef.current;
+    if (!listeners) return;
+    window.removeEventListener("pointermove", listeners.move);
+    window.removeEventListener("pointerup", listeners.up);
+    window.removeEventListener("pointercancel", listeners.cancel);
+    listenersRef.current = null;
+  }, []);
+
+  const finishDrag = useCallback(
+    (pointerId: number, clientX: number, clientY: number, cancelled = false) => {
+      const st = stateRef.current;
+      if (!st.dragging || st.pointerId !== pointerId) return;
+
+      removeWindowListeners();
+      const moved = st.moved;
+      stateRef.current = {
+        ...st,
+        pointerId: -1,
+        dragging: false,
+        moved: false,
+      };
+
+      const el = ref.current;
+      try {
+        if (el?.hasPointerCapture(pointerId)) el.releasePointerCapture(pointerId);
+      } catch {
+        // Some touch browsers throw when capture has already been released.
+      }
+
+      setOffset(null);
+      callbacksRef.current.onDragMove(Number.NEGATIVE_INFINITY, Number.NEGATIVE_INFINITY);
+      if (cancelled) return;
+      if (moved) callbacksRef.current.onDrop(clientX, clientY);
+      else callbacksRef.current.onTap();
+    },
+    [removeWindowListeners],
+  );
+
+  useEffect(() => removeWindowListeners, [removeWindowListeners]);
 
   const handlePointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
     if (disabled) return;
     e.preventDefault();
     const el = ref.current;
     if (!el) return;
-    el.setPointerCapture(e.pointerId);
+    removeWindowListeners();
+    try {
+      el.setPointerCapture(e.pointerId);
+    } catch {
+      // Window listeners below still keep the drag alive if capture is unavailable.
+    }
     stateRef.current = {
       startX: e.clientX,
       startY: e.clientY,
+      pointerId: e.pointerId,
       dragging: true,
       moved: false,
     };
     setOffset({ x: 0, y: 0 });
-  };
 
-  const handlePointerMove = (e: React.PointerEvent<HTMLButtonElement>) => {
-    const st = stateRef.current;
-    if (!st.dragging) return;
-    const dx = e.clientX - st.startX;
-    const dy = e.clientY - st.startY;
-    if (!st.moved && Math.hypot(dx, dy) > 6) st.moved = true;
-    setOffset({ x: dx, y: dy });
-    if (st.moved) onDragMove(e.clientX, e.clientY);
-  };
+    const pointerId = e.pointerId;
+    const move = (event: PointerEvent) => {
+      const st = stateRef.current;
+      if (!st.dragging || event.pointerId !== pointerId) return;
+      event.preventDefault();
+      const dx = event.clientX - st.startX;
+      const dy = event.clientY - st.startY;
+      if (!st.moved && Math.hypot(dx, dy) > 5) st.moved = true;
+      setOffset({ x: dx, y: dy });
+      if (st.moved) callbacksRef.current.onDragMove(event.clientX, event.clientY);
+    };
+    const up = (event: PointerEvent) => {
+      finishDrag(event.pointerId, event.clientX, event.clientY);
+    };
+    const cancel = (event: PointerEvent) => {
+      finishDrag(event.pointerId, event.clientX, event.clientY, true);
+    };
 
-  const handlePointerUp = (e: React.PointerEvent<HTMLButtonElement>) => {
-    const st = stateRef.current;
-    if (!st.dragging) return;
-    const el = ref.current;
-    if (el && el.hasPointerCapture(e.pointerId)) el.releasePointerCapture(e.pointerId);
-    stateRef.current.dragging = false;
-    setOffset(null);
-    if (st.moved) {
-      onDrop(e.clientX, e.clientY);
-    } else {
-      onTap();
-    }
-  };
-
-  const handlePointerCancel = () => {
-    stateRef.current.dragging = false;
-    stateRef.current.moved = false;
-    setOffset(null);
+    listenersRef.current = { move, up, cancel };
+    window.addEventListener("pointermove", move, { passive: false });
+    window.addEventListener("pointerup", up);
+    window.addEventListener("pointercancel", cancel);
   };
 
   return (
@@ -313,13 +383,11 @@ function DragObject({
       ref={ref}
       type="button"
       onPointerDown={handlePointerDown}
-      onPointerMove={handlePointerMove}
-      onPointerUp={handlePointerUp}
-      onPointerCancel={handlePointerCancel}
       disabled={disabled}
       style={{
         touchAction: "none",
         WebkitTapHighlightColor: "transparent",
+        pointerEvents: offset ? "none" : undefined,
         transform: offset ? `translate(${offset.x}px, ${offset.y}px) scale(1.35)` : undefined,
         zIndex: offset ? 50 : undefined,
         position: offset ? "relative" : undefined,
