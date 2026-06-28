@@ -1,5 +1,5 @@
-import { motion, useDragControls } from "framer-motion";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { motion } from "framer-motion";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { SprunkiAvatar } from "@/components/SprunkiAvatar";
 import type { Sprunki } from "@/types";
 
@@ -7,11 +7,8 @@ interface Props {
   total: number;
   groups: number;
   guide: Sprunki;
-  /** Pool of unlocked Sprunkies to use as recipients (will pick `groups` of them). */
   recipientsPool: Sprunki[];
-  /** Called when every recipient has the same count AND all objects are distributed. */
   onSolved: () => void;
-  /** Reset on key change (new problem). */
   resetKey: string | number;
 }
 
@@ -45,7 +42,7 @@ function objectFor(icon: string) {
 
 interface Assignment {
   id: number;
-  recipient: number | null; // recipient index, or null if still in pool
+  recipient: number | null;
 }
 
 export function SharingVisual({
@@ -58,30 +55,31 @@ export function SharingVisual({
 }: Props) {
   const { object, label } = useMemo(() => objectFor(guide.icon), [guide.icon]);
 
-  // Pick recipients: include guide + others from pool, padded with guide if needed.
   const recipients = useMemo<Sprunki[]>(() => {
     const others = recipientsPool.filter((s) => s.id !== guide.id);
     const shuffled = [...others].sort(() => Math.random() - 0.5);
     const picked: Sprunki[] = [guide, ...shuffled.slice(0, Math.max(0, groups - 1))];
     while (picked.length < groups) picked.push(guide);
     return picked;
-  }, [groups, guide, recipientsPool, resetKey]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [groups, guide, resetKey]);
 
   const [items, setItems] = useState<Assignment[]>(() =>
     Array.from({ length: total }, (_, i) => ({ id: i, recipient: null })),
   );
+  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [hoverRecipient, setHoverRecipient] = useState<number | null>(null);
   const recipientRefs = useRef<Array<HTMLDivElement | null>>([]);
   const [hint, setHint] = useState<string>("");
   const [solved, setSolved] = useState(false);
 
-  // Reset on new problem
   useEffect(() => {
     setItems(Array.from({ length: total }, (_, i) => ({ id: i, recipient: null })));
     setHint("");
     setSolved(false);
+    setSelectedId(null);
   }, [resetKey, total]);
 
-  // Detect solved state.
   useEffect(() => {
     if (solved) return;
     const counts = new Array(groups).fill(0);
@@ -104,25 +102,24 @@ export function SharingVisual({
     }
   }, [items, groups, solved, onSolved, hint]);
 
-  const assign = (itemId: number, recipientIdx: number | null) => {
+  const assign = useCallback((itemId: number, recipientIdx: number | null) => {
     setItems((prev) => prev.map((it) => (it.id === itemId ? { ...it, recipient: recipientIdx } : it)));
-  };
+  }, []);
 
-  const handleDragEnd = (itemId: number, point: { x: number; y: number }) => {
-    for (let i = 0; i < recipients.length; i++) {
+  const recipientAtPoint = useCallback((x: number, y: number) => {
+    for (let i = 0; i < recipientRefs.current.length; i++) {
       const el = recipientRefs.current[i];
       if (!el) continue;
       const r = el.getBoundingClientRect();
-      if (point.x >= r.left && point.x <= r.right && point.y >= r.top && point.y <= r.bottom) {
-        assign(itemId, i);
-        return;
-      }
+      if (x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) return i;
     }
-  };
+    return null;
+  }, []);
 
   const reset = () => {
     setItems(Array.from({ length: total }, (_, i) => ({ id: i, recipient: null })));
     setHint("");
+    setSelectedId(null);
   };
 
   const pool = items.filter((it) => it.recipient === null);
@@ -130,7 +127,6 @@ export function SharingVisual({
 
   return (
     <div className="flex flex-col gap-3 sm:gap-4">
-      {/* Pool of objects to share */}
       <div className="rounded-3xl bg-gradient-to-b from-[oklch(0.97_0.03_85)] to-[oklch(0.92_0.06_75)] p-3 ring-1 ring-[oklch(0.7_0.12_70)]/30 sm:p-5">
         <div className="mb-2 flex items-center justify-between text-xs font-black uppercase tracking-widest text-[oklch(0.4_0.1_60)] sm:text-sm">
           <span>
@@ -150,51 +146,67 @@ export function SharingVisual({
             <p className="py-2 text-sm font-bold text-muted-foreground">All shared — but is it fair?</p>
           )}
           {pool.map((it) => (
-            <DraggableObject
+            <DragObject
               key={it.id}
               object={object}
-              onDragEnd={(point) => handleDragEnd(it.id, point)}
               disabled={solved}
+              selected={selectedId === it.id}
+              onTap={() => setSelectedId((cur) => (cur === it.id ? null : it.id))}
+              onDrop={(x, y) => {
+                const idx = recipientAtPoint(x, y);
+                if (idx !== null) assign(it.id, idx);
+                setHoverRecipient(null);
+              }}
+              onDragMove={(x, y) => setHoverRecipient(recipientAtPoint(x, y))}
             />
           ))}
         </div>
       </div>
 
       <p className="text-center text-xs font-bold text-muted-foreground sm:text-sm">
-        Drag {label} to each friend so everyone gets the same.
+        Drag {label} to a friend — or tap one, then tap a friend.
       </p>
 
-      {/* Recipient zones */}
       <div
         className="grid gap-2 sm:gap-3"
         style={{ gridTemplateColumns: `repeat(${Math.min(groups, 5)}, minmax(0, 1fr))` }}
       >
         {recipients.map((s, i) => {
           const count = recipientCounts[i];
+          const isHover = hoverRecipient === i;
+          const onRecipientTap = () => {
+            if (solved) return;
+            // If an object is selected from the pool, send it here.
+            if (selectedId !== null && items.find((it) => it.id === selectedId)?.recipient === null) {
+              assign(selectedId, i);
+              setSelectedId(null);
+              return;
+            }
+            // Otherwise tap to return the last object to the pool.
+            const last = [...items].reverse().find((it) => it.recipient === i);
+            if (last) assign(last.id, null);
+          };
           return (
             <div
               key={i}
               ref={(el) => {
                 recipientRefs.current[i] = el;
               }}
-              className={`flex flex-col items-center gap-1 rounded-2xl p-2 ring-2 transition-colors sm:gap-2 sm:p-3 ${
+              onClick={onRecipientTap}
+              role="button"
+              aria-label={`${s.name} has ${count} ${label}`}
+              className={`flex cursor-pointer flex-col items-center gap-1 rounded-2xl p-2 ring-2 transition-all sm:gap-2 sm:p-3 ${
                 solved
                   ? "bg-[oklch(0.95_0.06_150)] ring-[oklch(0.7_0.16_150)]"
-                  : "bg-white/70 ring-border/60"
+                  : isHover
+                    ? "bg-[oklch(0.96_0.08_85)] ring-[oklch(0.7_0.18_70)] scale-105"
+                    : selectedId !== null
+                      ? "bg-white ring-[oklch(0.78_0.14_240)]/70"
+                      : "bg-white/70 ring-border/60 hover:bg-white"
               }`}
             >
-              <SprunkiAvatar sprunki={s} size={48} idle={!solved} bouncing={solved} />
-              <button
-                type="button"
-                onClick={() => {
-                  // Tap the pile to return one object to the pool — supports correction without dragging.
-                  const last = [...items].reverse().find((it) => it.recipient === i);
-                  if (last && !solved) assign(last.id, null);
-                }}
-                className="flex min-h-[2.25rem] flex-wrap justify-center gap-0.5 text-lg leading-none sm:min-h-[2.75rem] sm:text-xl"
-                aria-label={`${s.name} has ${count} ${label}. Tap to return one.`}
-                disabled={solved || count === 0}
-              >
+              <SprunkiAvatar sprunki={s} size={48} idle={!solved} bouncing={solved || isHover} />
+              <div className="pointer-events-none flex min-h-[2.25rem] flex-wrap justify-center gap-0.5 text-lg leading-none sm:min-h-[2.75rem] sm:text-xl">
                 {Array.from({ length: count }).map((_, j) => (
                   <motion.span
                     key={j}
@@ -205,8 +217,8 @@ export function SharingVisual({
                     {object}
                   </motion.span>
                 ))}
-              </button>
-              <span className="rounded-full bg-muted px-2 py-0.5 text-[0.65rem] font-black tabular-nums sm:text-xs">
+              </div>
+              <span className="pointer-events-none rounded-full bg-muted px-2 py-0.5 text-[0.65rem] font-black tabular-nums sm:text-xs">
                 {count}
               </span>
             </div>
@@ -227,31 +239,99 @@ export function SharingVisual({
   );
 }
 
-function DraggableObject({
+function DragObject({
   object,
-  onDragEnd,
   disabled,
+  selected,
+  onTap,
+  onDrop,
+  onDragMove,
 }: {
   object: string;
-  onDragEnd: (point: { x: number; y: number }) => void;
   disabled?: boolean;
+  selected?: boolean;
+  onTap: () => void;
+  onDrop: (x: number, y: number) => void;
+  onDragMove: (x: number, y: number) => void;
 }) {
-  const controls = useDragControls();
+  const ref = useRef<HTMLButtonElement | null>(null);
+  const stateRef = useRef({
+    startX: 0,
+    startY: 0,
+    dragging: false,
+    moved: false,
+  });
+  const [offset, setOffset] = useState<{ x: number; y: number } | null>(null);
+
+  const handlePointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
+    if (disabled) return;
+    e.preventDefault();
+    const el = ref.current;
+    if (!el) return;
+    el.setPointerCapture(e.pointerId);
+    stateRef.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      dragging: true,
+      moved: false,
+    };
+    setOffset({ x: 0, y: 0 });
+  };
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLButtonElement>) => {
+    const st = stateRef.current;
+    if (!st.dragging) return;
+    const dx = e.clientX - st.startX;
+    const dy = e.clientY - st.startY;
+    if (!st.moved && Math.hypot(dx, dy) > 6) st.moved = true;
+    setOffset({ x: dx, y: dy });
+    if (st.moved) onDragMove(e.clientX, e.clientY);
+  };
+
+  const handlePointerUp = (e: React.PointerEvent<HTMLButtonElement>) => {
+    const st = stateRef.current;
+    if (!st.dragging) return;
+    const el = ref.current;
+    if (el && el.hasPointerCapture(e.pointerId)) el.releasePointerCapture(e.pointerId);
+    stateRef.current.dragging = false;
+    setOffset(null);
+    if (st.moved) {
+      onDrop(e.clientX, e.clientY);
+    } else {
+      onTap();
+    }
+  };
+
+  const handlePointerCancel = () => {
+    stateRef.current.dragging = false;
+    stateRef.current.moved = false;
+    setOffset(null);
+  };
+
   return (
-    <motion.span
-      drag={!disabled}
-      dragControls={controls}
-      dragSnapToOrigin
-      dragMomentum={false}
-      whileTap={{ scale: 1.2 }}
-      whileDrag={{ scale: 1.35, zIndex: 50 }}
-      onDragEnd={(_, info) => onDragEnd({ x: info.point.x, y: info.point.y })}
-      style={{ touchAction: "none", WebkitTapHighlightColor: "transparent", cursor: disabled ? "default" : "grab" }}
-      className="inline-block select-none text-2xl sm:text-3xl"
-      role="button"
+    <button
+      ref={ref}
+      type="button"
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerCancel}
+      disabled={disabled}
+      style={{
+        touchAction: "none",
+        WebkitTapHighlightColor: "transparent",
+        transform: offset ? `translate(${offset.x}px, ${offset.y}px) scale(1.35)` : undefined,
+        zIndex: offset ? 50 : undefined,
+        position: offset ? "relative" : undefined,
+        cursor: disabled ? "default" : offset ? "grabbing" : "grab",
+      }}
+      className={`inline-flex select-none items-center justify-center rounded-full p-1 text-2xl transition-shadow sm:text-3xl ${
+        selected ? "bg-[oklch(0.92_0.1_240)] ring-2 ring-[oklch(0.6_0.2_240)] shadow-md" : ""
+      }`}
       aria-label="Draggable item"
+      aria-pressed={selected}
     >
-      {object}
-    </motion.span>
+      <span className="pointer-events-none">{object}</span>
+    </button>
   );
 }
