@@ -13,6 +13,7 @@ export const defaultState: GameState = {
   playTimeMs: 0,
   multiplicationSolved: 0,
   multiplicationChartUnlocked: false,
+  divisionSolved: 0,
   sprunkiProgress: {},
   settings: {
     music: true,
