@@ -100,7 +100,7 @@ export function HomeScreen({ game, go }: Props) {
             <BigButton variant="secondary" size="xl" icon="✨" onClick={() => go("collection")}>
               Collection
             </BigButton>
-            <BigButton variant="ghost" icon="⚙️" onClick={() => go("settings")}>
+            <BigButton variant="ghost" size="xl" icon="⚙️" onClick={() => go("settings")}>
               Settings
             </BigButton>
           </div>
