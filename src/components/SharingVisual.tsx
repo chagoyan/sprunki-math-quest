@@ -72,6 +72,14 @@ export function SharingVisual({
   const recipientRefs = useRef<Array<HTMLDivElement | null>>([]);
   const [hint, setHint] = useState<string>("");
   const [solved, setSolved] = useState(false);
+  const [debugLog, setDebugLog] = useState<string[]>([]);
+  const [debugPointer, setDebugPointer] = useState<{ x: number; y: number; hit: string | null } | null>(null);
+  const pushDebug = useCallback((msg: string) => {
+    setDebugLog((prev) => {
+      const ts = new Date().toISOString().slice(14, 23);
+      return [`${ts} ${msg}`, ...prev].slice(0, 10);
+    });
+  }, []);
 
   useEffect(() => {
     setItems(Array.from({ length: total }, (_, i) => ({ id: i, recipient: null })));
@@ -109,12 +117,15 @@ export function SharingVisual({
   const recipientAtPoint = useCallback((x: number, y: number) => {
     if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
 
-    const target = document.elementFromPoint(x, y);
+    const target = document.elementFromPoint(x, y) as HTMLElement | null;
     const recipientEl = target?.closest<HTMLElement>("[data-share-recipient]");
     const recipientIndex = recipientEl?.dataset.shareRecipient;
     if (recipientIndex !== undefined) {
       const parsed = Number(recipientIndex);
-      if (Number.isInteger(parsed)) return parsed;
+      if (Number.isInteger(parsed)) {
+        setDebugPointer({ x, y, hit: `#${parsed} (elementFromPoint:${target?.tagName ?? "?"})` });
+        return parsed;
+      }
     }
 
     for (let i = 0; i < recipientRefs.current.length; i++) {
@@ -128,9 +139,11 @@ export function SharingVisual({
         y >= r.top - padding &&
         y <= r.bottom + padding
       ) {
+        setDebugPointer({ x, y, hit: `#${i} (bbox; under=${target?.tagName ?? "?"})` });
         return i;
       }
     }
+    setDebugPointer({ x, y, hit: `miss (under=${target?.tagName ?? "?"}${target?.className ? " ." + String(target.className).slice(0, 24) : ""})` });
     return null;
   }, []);
 
@@ -169,9 +182,14 @@ export function SharingVisual({
               object={object}
               disabled={solved}
               selected={selectedId === it.id}
-              onTap={() => setSelectedId((cur) => (cur === it.id ? null : it.id))}
+              onTap={() => {
+                pushDebug(`tap item #${it.id}`);
+                setSelectedId((cur) => (cur === it.id ? null : it.id));
+              }}
+              onDragStart={() => pushDebug(`drag start item #${it.id}`)}
               onDrop={(x, y) => {
                 const idx = recipientAtPoint(x, y);
+                pushDebug(`drop item #${it.id} @ (${Math.round(x)},${Math.round(y)}) → ${idx === null ? "MISS" : "#" + idx}`);
                 if (idx !== null) assign(it.id, idx);
                 setHoverRecipient(null);
               }}
@@ -254,6 +272,47 @@ export function SharingVisual({
           {hint}
         </motion.p>
       )}
+
+      {/* Debug overlay — verify pointer events, hit detection, counts */}
+      <div className="rounded-xl border-2 border-dashed border-fuchsia-400 bg-black/85 p-2 font-mono text-[10px] leading-tight text-fuchsia-100 sm:text-xs">
+        <div className="mb-1 flex flex-wrap gap-x-3 gap-y-0.5 font-bold text-fuchsia-300">
+          <span>DEBUG</span>
+          <span>pool={pool.length}/{total}</span>
+          <span>selected={selectedId ?? "—"}</span>
+          <span>hover={hoverRecipient ?? "—"}</span>
+          <span>solved={String(solved)}</span>
+          <span>counts=[{recipientCounts.join(",")}]</span>
+        </div>
+        <div className="mb-1 text-fuchsia-200">
+          pointer={debugPointer ? `(${Math.round(debugPointer.x)},${Math.round(debugPointer.y)}) → ${debugPointer.hit ?? "—"}` : "—"}
+        </div>
+        <div className="max-h-28 overflow-y-auto">
+          {debugLog.length === 0 ? (
+            <div className="opacity-50">no events yet — try dragging or tapping</div>
+          ) : (
+            debugLog.map((line, i) => <div key={i}>{line}</div>)
+          )}
+        </div>
+      </div>
+
+      {/* Live pointer crosshair when dragging */}
+      {debugPointer && (
+        <div
+          aria-hidden
+          style={{
+            position: "fixed",
+            left: debugPointer.x - 8,
+            top: debugPointer.y - 8,
+            width: 16,
+            height: 16,
+            borderRadius: "9999px",
+            border: "2px solid magenta",
+            background: "rgba(255,0,255,0.25)",
+            pointerEvents: "none",
+            zIndex: 9999,
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -263,6 +322,7 @@ function DragObject({
   disabled,
   selected,
   onTap,
+  onDragStart,
   onDrop,
   onDragMove,
 }: {
@@ -270,6 +330,7 @@ function DragObject({
   disabled?: boolean;
   selected?: boolean;
   onTap: () => void;
+  onDragStart?: () => void;
   onDrop: (x: number, y: number) => void;
   onDragMove: (x: number, y: number) => void;
 }) {
@@ -281,7 +342,7 @@ function DragObject({
     dragging: false,
     moved: false,
   });
-  const callbacksRef = useRef({ onTap, onDrop, onDragMove });
+  const callbacksRef = useRef({ onTap, onDrop, onDragMove, onDragStart });
   const listenersRef = useRef<{
     move: (event: PointerEvent) => void;
     up: (event: PointerEvent) => void;
@@ -290,8 +351,8 @@ function DragObject({
   const [offset, setOffset] = useState<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
-    callbacksRef.current = { onTap, onDrop, onDragMove };
-  }, [onTap, onDrop, onDragMove]);
+    callbacksRef.current = { onTap, onDrop, onDragMove, onDragStart };
+  }, [onTap, onDrop, onDragMove, onDragStart]);
 
   const removeWindowListeners = useCallback(() => {
     const listeners = listenersRef.current;
@@ -353,6 +414,7 @@ function DragObject({
       moved: false,
     };
     setOffset({ x: 0, y: 0 });
+    callbacksRef.current.onDragStart?.();
 
     const pointerId = e.pointerId;
     const move = (event: PointerEvent) => {
