@@ -106,7 +106,6 @@ export function SharingVisual({
 
   const assign = (itemId: number, recipientIdx: number | null) => {
     setItems((prev) => prev.map((it) => (it.id === itemId ? { ...it, recipient: recipientIdx } : it)));
-    if (recipientIdx !== null) sound.correct?.();
   };
 
   const handleDragEnd = (itemId: number, point: { x: number; y: number }) => {
