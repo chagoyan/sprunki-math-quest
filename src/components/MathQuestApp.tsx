@@ -60,7 +60,7 @@ export function MathQuestApp() {
       {screen === "collection" && <CollectionScreen game={game} go={setScreen} />}
       {screen === "settings" && <SettingsScreen game={game} go={setScreen} />}
       {screen === "parent" && <ParentScreen game={game} go={setScreen} />}
-      {screen === "dndtest" && <DndTestScreen go={setScreen} />}
+      
     </AppShell>
   );
 }
