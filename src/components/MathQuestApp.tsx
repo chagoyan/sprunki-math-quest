@@ -10,7 +10,7 @@ import { useGameState } from "@/hooks/useGameState";
 import { music } from "@/lib/music";
 import { sound } from "@/lib/sound";
 
-export type Screen = "home" | "practice" | "collection" | "settings" | "parent" | "dndtest";
+export type Screen = "home" | "practice" | "collection" | "settings" | "parent";
 
 export function MathQuestApp() {
   const [screen, setScreen] = useState<Screen>("home");
