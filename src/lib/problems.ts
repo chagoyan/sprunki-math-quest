@@ -7,8 +7,10 @@ export interface ProblemConfig {
   operation: Operation;
   min?: number;
   max?: number;
-  /** For multiplication: how many problems the child has solved so far. Drives difficulty progression. */
+  /** For multiplication: how many the child has solved so far. Drives difficulty progression. */
   multiplicationSolved?: number;
+  /** For division: how many the child has solved so far. */
+  divisionSolved?: number;
 }
 
 // Progressive pools of [groups, perGroup] pairs for multiplication.
