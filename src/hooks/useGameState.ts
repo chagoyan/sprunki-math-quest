@@ -121,6 +121,9 @@ export function useGameState() {
         const multiplicationChartUnlocked =
           prev.multiplicationChartUnlocked || multiplicationChartJustUnlocked;
 
+        const divisionSolved =
+          operation === "division" ? prev.divisionSolved + 1 : prev.divisionSolved;
+
         result = { correct, leveledUp, newLevel, unlocked, multiplicationChartJustUnlocked };
 
         return {
@@ -133,6 +136,7 @@ export function useGameState() {
           totalCorrect: prev.totalCorrect + 1,
           multiplicationSolved,
           multiplicationChartUnlocked,
+          divisionSolved,
           sprunkiProgress,
           lastPlayedAt: new Date().toISOString(),
         };

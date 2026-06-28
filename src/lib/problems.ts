@@ -7,8 +7,10 @@ export interface ProblemConfig {
   operation: Operation;
   min?: number;
   max?: number;
-  /** For multiplication: how many problems the child has solved so far. Drives difficulty progression. */
+  /** For multiplication: how many the child has solved so far. Drives difficulty progression. */
   multiplicationSolved?: number;
+  /** For division: how many the child has solved so far. */
+  divisionSolved?: number;
 }
 
 // Progressive pools of [groups, perGroup] pairs for multiplication.
@@ -27,6 +29,22 @@ const MULT_STAGES: Array<Array<[number, number]>> = [
 function pickMultPair(solved: number): [number, number] {
   const stage = solved < 10 ? 0 : solved < 25 ? 1 : solved < 50 ? 2 : 3;
   const pool = MULT_STAGES[stage];
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+// Sharing-equally model: [total, groups]. All have whole-number quotients, no remainders.
+const DIV_STAGES: Array<Array<[number, number]>> = [
+  // Stage 0 (first ~10): very small, easy to drag
+  [[4, 2], [6, 2], [6, 3], [8, 2]],
+  // Stage 1 (~10–25): introduce 3-group sharing
+  [[4, 2], [6, 2], [6, 3], [8, 2], [9, 3], [10, 2], [12, 3]],
+  // Stage 2 (25+): up to 20 / 5
+  [[6, 3], [8, 2], [9, 3], [10, 2], [12, 3], [12, 4], [15, 3], [20, 5]],
+];
+
+function pickDivPair(solved: number): [number, number] {
+  const stage = solved < 10 ? 0 : solved < 25 ? 1 : 2;
+  const pool = DIV_STAGES[stage];
   return pool[Math.floor(Math.random() * pool.length)];
 }
 
@@ -56,12 +74,11 @@ export function generateProblem(config: ProblemConfig = { operation: "addition" 
       break;
     }
     case "division": {
-      // Ensure clean division: pick divisor and quotient, compute dividend
-      const divisor = randInt(1, Math.max(1, max));
-      const quotient = randInt(min, max);
-      a = divisor * quotient;
-      b = divisor;
-      answer = quotient;
+      // Sharing-equally model: a = total objects, b = number of groups (Sprunkies).
+      const [total, groups] = pickDivPair(config.divisionSolved ?? 0);
+      a = total;
+      b = groups;
+      answer = total / groups;
       break;
     }
   }

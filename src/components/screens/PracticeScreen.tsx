@@ -6,6 +6,7 @@ import { CountingBeads } from "@/components/CountingBeads";
 import { fireConfetti } from "@/components/ConfettiBurst";
 import { generateProblem, operationSymbol, pickOperation } from "@/lib/problems";
 import { EqualGroupsVisual } from "@/components/EqualGroupsVisual";
+import { SharingVisual } from "@/components/SharingVisual";
 import { sound } from "@/lib/sound";
 import { music } from "@/lib/music";
 import type { UseGameState } from "@/hooks/useGameState";
@@ -25,12 +26,20 @@ export function PracticeScreen({ game, go }: Props) {
   const { state, unlockedSprunkies, recordAnswer, markSelected } = game;
   const ops = state.settings.operations?.length ? state.settings.operations : ["addition" as const];
   const multSolvedRef = useRef(state.multiplicationSolved);
+  const divSolvedRef = useRef(state.divisionSolved);
   useEffect(() => {
     multSolvedRef.current = state.multiplicationSolved;
   }, [state.multiplicationSolved]);
+  useEffect(() => {
+    divSolvedRef.current = state.divisionSolved;
+  }, [state.divisionSolved]);
   const makeProblem = useCallback(
     (op = pickOperation(ops)) =>
-      generateProblem({ operation: op, multiplicationSolved: multSolvedRef.current }),
+      generateProblem({
+        operation: op,
+        multiplicationSolved: multSolvedRef.current,
+        divisionSolved: divSolvedRef.current,
+      }),
     [ops],
   );
   const [problem, setProblem] = useState<Problem>(() => makeProblem());
@@ -70,26 +79,31 @@ export function PracticeScreen({ game, go }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [guide.icon]);
 
+  const handleCorrect = useCallback(() => {
+    if (sfxOn) sound.correct();
+    setStatus("correct");
+    const result = recordAnswer(true, guide.id, problem.operation);
+    setPhrase(guide.catchPhrases[Math.floor(Math.random() * guide.catchPhrases.length)]);
+    fireConfetti("small");
+    const advanceDelay =
+      problem.operation === "multiplication" || problem.operation === "division" ? 2400 : 1100;
+    if (result.leveledUp) {
+      if (sfxOn) {
+        setTimeout(() => sound.levelUp(), 250);
+        if (result.unlocked) setTimeout(() => sound.unlock(), 700);
+      }
+      setLevelUp({ level: result.newLevel, unlocked: result.unlocked });
+    } else {
+      advanceTimer.current = window.setTimeout(setupNext, advanceDelay);
+    }
+  }, [sfxOn, recordAnswer, guide.id, guide.catchPhrases, problem.operation, setupNext]);
+
   const onAnswer = (choice: number) => {
     if (status === "correct") return;
     setSelected(choice);
     const correct = choice === problem.answer;
     if (correct) {
-      if (sfxOn) sound.correct();
-      setStatus("correct");
-      const result = recordAnswer(true, guide.id, problem.operation);
-      setPhrase(guide.catchPhrases[Math.floor(Math.random() * guide.catchPhrases.length)]);
-      fireConfetti("small");
-      const advanceDelay = problem.operation === "multiplication" ? 2200 : 1100;
-      if (result.leveledUp) {
-        if (sfxOn) {
-          setTimeout(() => sound.levelUp(), 250);
-          if (result.unlocked) setTimeout(() => sound.unlock(), 700);
-        }
-        setLevelUp({ level: result.newLevel, unlocked: result.unlocked });
-      } else {
-        advanceTimer.current = window.setTimeout(setupNext, advanceDelay);
-      }
+      handleCorrect();
     } else {
       if (sfxOn) sound.wrong();
       setStatus("wrong");
@@ -98,6 +112,11 @@ export function PracticeScreen({ game, go }: Props) {
       window.setTimeout(() => setStatus("idle"), 600);
     }
   };
+
+  const onSharingSolved = useCallback(() => {
+    if (status === "correct") return;
+    handleCorrect();
+  }, [status, handleCorrect]);
 
   const dismissLevelUp = () => {
     setLevelUp(null);
@@ -165,7 +184,11 @@ export function PracticeScreen({ game, go }: Props) {
               ? status === "correct"
                 ? "You got it!"
                 : "Count the groups"
-              : "Solve the problem"}
+              : problem.operation === "division"
+                ? status === "correct"
+                  ? "Fair share!"
+                  : "Share equally"
+                : "Solve the problem"}
           </p>
 
           {problem.operation === "multiplication" ? (
@@ -202,6 +225,43 @@ export function PracticeScreen({ game, go }: Props) {
                 perGroup={problem.b}
                 guide={guide}
                 solved={status === "correct"}
+              />
+            </>
+          ) : problem.operation === "division" ? (
+            <>
+              <AnimatePresence mode="wait">
+                {status === "correct" ? (
+                  <motion.div
+                    key="div-eq-revealed"
+                    initial={{ opacity: 0, scale: 0.6 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ type: "spring", stiffness: 260, damping: 18 }}
+                    className="text-center text-[clamp(2rem,9vw,4.5rem)] font-black leading-none tracking-tight sm:text-left"
+                  >
+                    <span className="tabular-nums">{problem.a}</span>{" "}
+                    <span className="text-muted-foreground">÷</span>{" "}
+                    <span className="tabular-nums">{problem.b}</span>{" "}
+                    <span className="text-muted-foreground">=</span>{" "}
+                    <span className="tabular-nums text-[oklch(0.55_0.2_150)]">{problem.answer}</span>
+                  </motion.div>
+                ) : (
+                  <motion.p
+                    key="div-eq-hidden"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="text-center text-xl font-black sm:text-left sm:text-2xl"
+                  >
+                    Share {problem.a} between {problem.b} friends — how many each?
+                  </motion.p>
+                )}
+              </AnimatePresence>
+              <SharingVisual
+                total={problem.a}
+                groups={problem.b}
+                guide={guide}
+                recipientsPool={unlockedSprunkies}
+                onSolved={onSharingSolved}
+                resetKey={`${guide.id}-${problem.a}-${problem.b}`}
               />
             </>
           ) : (
@@ -241,35 +301,37 @@ export function PracticeScreen({ game, go }: Props) {
             </>
           )}
 
-
-          <div className="grid grid-cols-2 gap-3 sm:gap-4">
-            {choices.map((choice) => {
-              const isSelected = selected === choice;
-              const isCorrect = status === "correct" && choice === problem.answer;
-              const isWrong = status === "wrong" && isSelected;
-              return (
-                <motion.button
-                  key={choice}
-                  whileTap={{ scale: 0.96 }}
-                  onClick={() => onAnswer(choice)}
-                  disabled={status === "correct"}
-                  style={{ touchAction: "manipulation", WebkitTapHighlightColor: "transparent" }}
-                  className={[
-                    "relative h-16 select-none rounded-2xl text-2xl font-black tabular-nums sm:h-24 sm:rounded-3xl sm:text-4xl",
-                    "focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[oklch(0.78_0.18_240)]/40",
-                    isCorrect
-                      ? "bg-gradient-to-b from-[oklch(0.86_0.18_145)] to-[oklch(0.66_0.22_150)] text-white shadow-[0_8px_0_oklch(0.46_0.18_150)]"
-                      : isWrong
-                        ? "bg-gradient-to-b from-[oklch(0.86_0.16_30)] to-[oklch(0.62_0.22_28)] text-white shadow-[0_8px_0_oklch(0.45_0.2_28)]"
-                        : "bg-gradient-to-b from-white to-[oklch(0.96_0.02_260)] text-foreground shadow-[0_8px_0_oklch(0.86_0.02_260)] ring-1 ring-border hover:from-[oklch(0.98_0.02_240)] active:translate-y-[3px] active:shadow-[0_4px_0_oklch(0.86_0.02_260)]",
-                  ].join(" ")}
-                  aria-label={`Answer ${choice}`}
-                >
-                  {choice}
-                </motion.button>
-              );
-            })}
-          </div>
+          {/* Multiple-choice answers — addition/subtraction only. Multiplication uses visual recognition; division uses the share-equally interaction. */}
+          {problem.operation !== "division" && (
+            <div className="grid grid-cols-2 gap-3 sm:gap-4">
+              {choices.map((choice) => {
+                const isSelected = selected === choice;
+                const isCorrect = status === "correct" && choice === problem.answer;
+                const isWrong = status === "wrong" && isSelected;
+                return (
+                  <motion.button
+                    key={choice}
+                    whileTap={{ scale: 0.96 }}
+                    onClick={() => onAnswer(choice)}
+                    disabled={status === "correct"}
+                    style={{ touchAction: "manipulation", WebkitTapHighlightColor: "transparent" }}
+                    className={[
+                      "relative h-16 select-none rounded-2xl text-2xl font-black tabular-nums sm:h-24 sm:rounded-3xl sm:text-4xl",
+                      "focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[oklch(0.78_0.18_240)]/40",
+                      isCorrect
+                        ? "bg-gradient-to-b from-[oklch(0.86_0.18_145)] to-[oklch(0.66_0.22_150)] text-white shadow-[0_8px_0_oklch(0.46_0.18_150)]"
+                        : isWrong
+                          ? "bg-gradient-to-b from-[oklch(0.86_0.16_30)] to-[oklch(0.62_0.22_28)] text-white shadow-[0_8px_0_oklch(0.45_0.2_28)]"
+                          : "bg-gradient-to-b from-white to-[oklch(0.96_0.02_260)] text-foreground shadow-[0_8px_0_oklch(0.86_0.02_260)] ring-1 ring-border hover:from-[oklch(0.98_0.02_240)] active:translate-y-[3px] active:shadow-[0_4px_0_oklch(0.86_0.02_260)]",
+                    ].join(" ")}
+                    aria-label={`Answer ${choice}`}
+                  >
+                    {choice}
+                  </motion.button>
+                );
+              })}
+            </div>
+          )}
         </div>
       </motion.div>
 
