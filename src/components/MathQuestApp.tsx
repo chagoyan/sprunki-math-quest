@@ -5,7 +5,7 @@ import { PracticeScreen } from "@/components/screens/PracticeScreen";
 import { CollectionScreen } from "@/components/screens/CollectionScreen";
 import { SettingsScreen } from "@/components/screens/SettingsScreen";
 import { ParentScreen } from "@/components/screens/ParentScreen";
-import { DndTestScreen } from "@/components/screens/DndTestScreen";
+
 import { useGameState } from "@/hooks/useGameState";
 import { music } from "@/lib/music";
 import { sound } from "@/lib/sound";
