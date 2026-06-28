@@ -72,6 +72,14 @@ export function SharingVisual({
   const recipientRefs = useRef<Array<HTMLDivElement | null>>([]);
   const [hint, setHint] = useState<string>("");
   const [solved, setSolved] = useState(false);
+  const [debugLog, setDebugLog] = useState<string[]>([]);
+  const [debugPointer, setDebugPointer] = useState<{ x: number; y: number; hit: string | null } | null>(null);
+  const pushDebug = useCallback((msg: string) => {
+    setDebugLog((prev) => {
+      const ts = new Date().toISOString().slice(14, 23);
+      return [`${ts} ${msg}`, ...prev].slice(0, 10);
+    });
+  }, []);
 
   useEffect(() => {
     setItems(Array.from({ length: total }, (_, i) => ({ id: i, recipient: null })));
