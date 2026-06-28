@@ -193,13 +193,7 @@ export function PracticeScreen({ game, go }: Props) {
                 <motion.button
                   key={choice}
                   whileTap={{ scale: 0.96 }}
-                  onPointerDown={(e) => {
-                    // Respond on pointerdown for instant visual + audio feedback.
-                    // Skip synthetic mouse events that follow touch.
-                    if (e.pointerType === "mouse" && e.button !== 0) return;
-                    e.preventDefault();
-                    onAnswer(choice);
-                  }}
+                  onClick={() => onAnswer(choice)}
                   disabled={status === "correct"}
                   style={{ touchAction: "manipulation", WebkitTapHighlightColor: "transparent" }}
                   className={[
