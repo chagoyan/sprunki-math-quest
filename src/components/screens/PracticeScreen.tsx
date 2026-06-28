@@ -22,7 +22,8 @@ function pickGuide(list: Sprunki[]): Sprunki {
 
 export function PracticeScreen({ game, go }: Props) {
   const { state, unlockedSprunkies, recordAnswer, markSelected } = game;
-  const [problem, setProblem] = useState<Problem>(() => generateProblem({ operation: "addition" }));
+  const ops = state.settings.operations?.length ? state.settings.operations : ["addition" as const];
+  const [problem, setProblem] = useState<Problem>(() => generateProblem({ operation: pickOperation(ops) }));
   const [guide, setGuide] = useState<Sprunki>(() => pickGuide(unlockedSprunkies));
   const [phrase, setPhrase] = useState<string>("");
   const [selected, setSelected] = useState<number | null>(null);
