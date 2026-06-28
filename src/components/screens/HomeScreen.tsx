@@ -73,7 +73,7 @@ export function HomeScreen({ game, go }: Props) {
                 return (
                   <label
                     key={op}
-                    className={`flex cursor-pointer items-center gap-2 rounded-xl px-3 py-2 ring-1 transition-colors ${
+                    className={`flex cursor-pointer items-center justify-center gap-2 rounded-xl px-3 py-2 ring-1 transition-colors ${
                       checked
                         ? "bg-foreground text-background ring-foreground"
                         : "bg-card ring-border hover:bg-accent"
