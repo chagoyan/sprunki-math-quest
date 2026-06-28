@@ -373,6 +373,7 @@ function DragObject({
       moved: false,
     };
     setOffset({ x: 0, y: 0 });
+    callbacksRef.current.onDragStart?.();
 
     const pointerId = e.pointerId;
     const move = (event: PointerEvent) => {
