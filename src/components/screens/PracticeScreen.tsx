@@ -5,6 +5,7 @@ import { SprunkiAvatar } from "@/components/SprunkiAvatar";
 import { CountingBeads } from "@/components/CountingBeads";
 import { fireConfetti } from "@/components/ConfettiBurst";
 import { generateProblem, operationSymbol, pickOperation } from "@/lib/problems";
+import { EqualGroupsVisual } from "@/components/EqualGroupsVisual";
 import { sound } from "@/lib/sound";
 import { music } from "@/lib/music";
 import type { UseGameState } from "@/hooks/useGameState";
@@ -23,7 +24,16 @@ function pickGuide(list: Sprunki[]): Sprunki {
 export function PracticeScreen({ game, go }: Props) {
   const { state, unlockedSprunkies, recordAnswer, markSelected } = game;
   const ops = state.settings.operations?.length ? state.settings.operations : ["addition" as const];
-  const [problem, setProblem] = useState<Problem>(() => generateProblem({ operation: pickOperation(ops) }));
+  const multSolvedRef = useRef(state.multiplicationSolved);
+  useEffect(() => {
+    multSolvedRef.current = state.multiplicationSolved;
+  }, [state.multiplicationSolved]);
+  const makeProblem = useCallback(
+    (op = pickOperation(ops)) =>
+      generateProblem({ operation: op, multiplicationSolved: multSolvedRef.current }),
+    [ops],
+  );
+  const [problem, setProblem] = useState<Problem>(() => makeProblem());
   const [guide, setGuide] = useState<Sprunki>(() => pickGuide(unlockedSprunkies));
   const [phrase, setPhrase] = useState<string>("");
   const [selected, setSelected] = useState<number | null>(null);
@@ -39,10 +49,10 @@ export function PracticeScreen({ game, go }: Props) {
     const next = pickGuide(unlockedSprunkies);
     setGuide(next);
     markSelected(next.id);
-    setProblem(generateProblem({ operation: pickOperation(ops) }));
+    setProblem(makeProblem());
     setSelected(null);
     setStatus("idle");
-  }, [unlockedSprunkies, markSelected, ops]);
+  }, [unlockedSprunkies, markSelected, makeProblem]);
 
   useEffect(() => {
     // initial select count for first guide
@@ -67,9 +77,10 @@ export function PracticeScreen({ game, go }: Props) {
     if (correct) {
       if (sfxOn) sound.correct();
       setStatus("correct");
-      const result = recordAnswer(true, guide.id);
+      const result = recordAnswer(true, guide.id, problem.operation);
       setPhrase(guide.catchPhrases[Math.floor(Math.random() * guide.catchPhrases.length)]);
       fireConfetti("small");
+      const advanceDelay = problem.operation === "multiplication" ? 2200 : 1100;
       if (result.leveledUp) {
         if (sfxOn) {
           setTimeout(() => sound.levelUp(), 250);
@@ -77,12 +88,12 @@ export function PracticeScreen({ game, go }: Props) {
         }
         setLevelUp({ level: result.newLevel, unlocked: result.unlocked });
       } else {
-        advanceTimer.current = window.setTimeout(setupNext, 1100);
+        advanceTimer.current = window.setTimeout(setupNext, advanceDelay);
       }
     } else {
       if (sfxOn) sound.wrong();
       setStatus("wrong");
-      recordAnswer(false, guide.id);
+      recordAnswer(false, guide.id, problem.operation);
       cardControls.start({ x: [0, -14, 14, -10, 10, -4, 0], transition: { duration: 0.5 } });
       window.setTimeout(() => setStatus("idle"), 600);
     }
@@ -150,40 +161,86 @@ export function PracticeScreen({ game, go }: Props) {
 
         <div className="flex flex-col gap-4 sm:gap-6">
           <p className="text-center text-xs font-bold uppercase tracking-widest text-muted-foreground sm:text-left sm:text-sm">
-            Solve the problem
+            {problem.operation === "multiplication"
+              ? status === "correct"
+                ? "You got it!"
+                : "Count the groups"
+              : "Solve the problem"}
           </p>
-          <div className="text-center text-[clamp(2.5rem,12vw,6rem)] font-black leading-none tracking-tight sm:text-left">
-            <span className="tabular-nums">{problem.a}</span>{" "}
-            <span className="text-muted-foreground">{operationSymbol[problem.operation]}</span>{" "}
-            <span className="tabular-nums">{problem.b}</span>{" "}
-            <span className="text-muted-foreground">=</span>{" "}
-            <span className="text-muted-foreground/70">?</span>
-          </div>
 
-          <div className="flex items-center justify-between">
-            <button
-              type="button"
-              onClick={() => setShowBeads((v) => !v)}
-              className="rounded-full bg-card px-4 py-2 text-xs font-bold ring-1 ring-border shadow-sm hover:bg-accent"
-              aria-pressed={showBeads}
-            >
-              {showBeads ? "🧮 Hide beads" : "🧮 Show beads"}
-            </button>
-          </div>
+          {problem.operation === "multiplication" ? (
+            <>
+              {/* Equation is hidden until the child answers, so they discover it via the visual. */}
+              <AnimatePresence mode="wait">
+                {status === "correct" ? (
+                  <motion.div
+                    key="eq-revealed"
+                    initial={{ opacity: 0, scale: 0.6 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ type: "spring", stiffness: 260, damping: 18 }}
+                    className="text-center text-[clamp(2rem,9vw,4.5rem)] font-black leading-none tracking-tight sm:text-left"
+                  >
+                    <span className="tabular-nums">{problem.a}</span>{" "}
+                    <span className="text-muted-foreground">×</span>{" "}
+                    <span className="tabular-nums">{problem.b}</span>{" "}
+                    <span className="text-muted-foreground">=</span>{" "}
+                    <span className="tabular-nums text-[oklch(0.55_0.2_150)]">{problem.answer}</span>
+                  </motion.div>
+                ) : (
+                  <motion.p
+                    key="eq-hidden"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="text-center text-xl font-black sm:text-left sm:text-2xl"
+                  >
+                    {problem.a} groups of {problem.b} — how many altogether?
+                  </motion.p>
+                )}
+              </AnimatePresence>
+              <EqualGroupsVisual
+                groups={problem.a}
+                perGroup={problem.b}
+                guide={guide}
+                solved={status === "correct"}
+              />
+            </>
+          ) : (
+            <>
+              <div className="text-center text-[clamp(2.5rem,12vw,6rem)] font-black leading-none tracking-tight sm:text-left">
+                <span className="tabular-nums">{problem.a}</span>{" "}
+                <span className="text-muted-foreground">{operationSymbol[problem.operation]}</span>{" "}
+                <span className="tabular-nums">{problem.b}</span>{" "}
+                <span className="text-muted-foreground">=</span>{" "}
+                <span className="text-muted-foreground/70">?</span>
+              </div>
 
-          <AnimatePresence initial={false}>
-            {showBeads && (
-              <motion.div
-                key="beads"
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.25 }}
-              >
-                <CountingBeads a={problem.a} b={problem.b} operation={problem.operation} solved={status === "correct"} guideIcon={guide.icon} />
-              </motion.div>
-            )}
-          </AnimatePresence>
+              <div className="flex items-center justify-between">
+                <button
+                  type="button"
+                  onClick={() => setShowBeads((v) => !v)}
+                  className="rounded-full bg-card px-4 py-2 text-xs font-bold ring-1 ring-border shadow-sm hover:bg-accent"
+                  aria-pressed={showBeads}
+                >
+                  {showBeads ? "🧮 Hide beads" : "🧮 Show beads"}
+                </button>
+              </div>
+
+              <AnimatePresence initial={false}>
+                {showBeads && (
+                  <motion.div
+                    key="beads"
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.25 }}
+                  >
+                    <CountingBeads a={problem.a} b={problem.b} operation={problem.operation} solved={status === "correct"} guideIcon={guide.icon} />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </>
+          )}
+
 
           <div className="grid grid-cols-2 gap-3 sm:gap-4">
             {choices.map((choice) => {

@@ -22,7 +22,10 @@ export interface AnswerResult {
   leveledUp: boolean;
   newLevel: number;
   unlocked?: Sprunki;
+  multiplicationChartJustUnlocked?: boolean;
 }
+
+const MULT_CHART_UNLOCK_AT = 100;
 
 export function useGameState() {
   const [state, setState] = useState<GameState>(() => hydrate(defaultState));
@@ -76,7 +79,7 @@ export function useGameState() {
   );
 
   const recordAnswer = useCallback(
-    (correct: boolean, sprunkiId: number): AnswerResult => {
+    (correct: boolean, sprunkiId: number, operation?: string): AnswerResult => {
       let result: AnswerResult = { correct, leveledUp: false, newLevel: state.level };
       setState((prev) => {
         const totalAnswered = prev.totalAnswered + 1;
@@ -111,7 +114,14 @@ export function useGameState() {
           }
         }
 
-        result = { correct, leveledUp, newLevel, unlocked };
+        const multiplicationSolved =
+          operation === "multiplication" ? prev.multiplicationSolved + 1 : prev.multiplicationSolved;
+        const multiplicationChartJustUnlocked =
+          !prev.multiplicationChartUnlocked && multiplicationSolved >= MULT_CHART_UNLOCK_AT;
+        const multiplicationChartUnlocked =
+          prev.multiplicationChartUnlocked || multiplicationChartJustUnlocked;
+
+        result = { correct, leveledUp, newLevel, unlocked, multiplicationChartJustUnlocked };
 
         return {
           ...prev,
@@ -121,6 +131,8 @@ export function useGameState() {
           bestStreak,
           totalAnswered,
           totalCorrect: prev.totalCorrect + 1,
+          multiplicationSolved,
+          multiplicationChartUnlocked,
           sprunkiProgress,
           lastPlayedAt: new Date().toISOString(),
         };

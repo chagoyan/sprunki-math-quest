@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { BigButton } from "@/components/BigButton";
+import { MultiplicationChart } from "@/components/MultiplicationChart";
 import type { UseGameState } from "@/hooks/useGameState";
 import type { Screen } from "@/components/MathQuestApp";
 
@@ -115,6 +116,24 @@ export function ParentScreen({ game, go }: Props) {
           <li>Progress is saved on this device. Cloud sync can be added later.</li>
           <li>Change the parent passcode and other settings via Settings.</li>
         </ul>
+      </div>
+
+      <div className="rounded-[2rem] bg-card p-6 shadow-sm ring-1 ring-border/60">
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <h3 className="text-lg font-black">Multiplication chart</h3>
+          <span className="rounded-full bg-accent px-3 py-1 text-xs font-bold tabular-nums">
+            {state.multiplicationSolved} solved
+            {!state.multiplicationChartUnlocked && ` · ${Math.max(0, 100 - state.multiplicationSolved)} to unlock`}
+          </span>
+        </div>
+        {state.multiplicationChartUnlocked ? (
+          <MultiplicationChart size={10} />
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            Children unlock the multiplication chart after solving 100 multiplication problems by
+            understanding equal groups first.
+          </p>
+        )}
       </div>
     </div>
   );

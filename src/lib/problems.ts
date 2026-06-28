@@ -7,6 +7,27 @@ export interface ProblemConfig {
   operation: Operation;
   min?: number;
   max?: number;
+  /** For multiplication: how many problems the child has solved so far. Drives difficulty progression. */
+  multiplicationSolved?: number;
+}
+
+// Progressive pools of [groups, perGroup] pairs for multiplication.
+// Start tiny, build mathematical intuition before introducing larger values.
+const MULT_STAGES: Array<Array<[number, number]>> = [
+  // Stage 0 (first ~10 problems): the absolute basics
+  [[2, 2], [2, 3], [3, 2], [2, 4], [4, 2]],
+  // Stage 1 (~10–25): add 3-based groups
+  [[2, 2], [2, 3], [3, 2], [2, 4], [4, 2], [3, 3], [2, 5], [5, 2], [3, 4], [4, 3]],
+  // Stage 2 (~25–50): up to 4×4
+  [[2, 3], [3, 2], [2, 4], [4, 2], [3, 3], [3, 4], [4, 3], [2, 5], [5, 2], [4, 4], [3, 5], [5, 3]],
+  // Stage 3 (50+): up to 5×5
+  [[3, 3], [3, 4], [4, 3], [4, 4], [3, 5], [5, 3], [4, 5], [5, 4], [5, 5], [2, 5], [5, 2]],
+];
+
+function pickMultPair(solved: number): [number, number] {
+  const stage = solved < 10 ? 0 : solved < 25 ? 1 : solved < 50 ? 2 : 3;
+  const pool = MULT_STAGES[stage];
+  return pool[Math.floor(Math.random() * pool.length)];
 }
 
 // Generator is data-driven so subtraction/multiplication/division can be added later.
@@ -26,9 +47,14 @@ export function generateProblem(config: ProblemConfig = { operation: "addition" 
       answer = a - b;
       break;
     }
-    case "multiplication":
+    case "multiplication": {
+      // Equal-groups model: a = number of groups, b = items per group.
+      const [groups, perGroup] = pickMultPair(config.multiplicationSolved ?? 0);
+      a = groups;
+      b = perGroup;
       answer = a * b;
       break;
+    }
     case "division": {
       // Ensure clean division: pick divisor and quotient, compute dividend
       const divisor = randInt(1, Math.max(1, max));

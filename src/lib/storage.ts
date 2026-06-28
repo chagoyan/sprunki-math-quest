@@ -11,6 +11,8 @@ export const defaultState: GameState = {
   totalCorrect: 0,
   totalAnswered: 0,
   playTimeMs: 0,
+  multiplicationSolved: 0,
+  multiplicationChartUnlocked: false,
   sprunkiProgress: {},
   settings: {
     music: true,

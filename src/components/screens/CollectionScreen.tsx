@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { SprunkiAvatar } from "@/components/SprunkiAvatar";
 import { BigButton } from "@/components/BigButton";
 import { sprunkies } from "@/lib/sprunkies";
+import { MultiplicationChart } from "@/components/MultiplicationChart";
 import { mixer } from "@/lib/sprunkiMixer";
 import { music } from "@/lib/music";
 import type { UseGameState } from "@/hooks/useGameState";
@@ -30,7 +31,10 @@ const rarityBadge: Record<string, string> = {
 
 export function CollectionScreen({ game, go }: Props) {
   const [open, setOpen] = useState<Sprunki | null>(null);
+  const [chartOpen, setChartOpen] = useState(false);
   const [activeIds, setActiveIds] = useState<Set<number>>(new Set());
+  const chartUnlocked = game.state.multiplicationChartUnlocked;
+  const multSolved = game.state.multiplicationSolved;
 
   // Pause background music while the mixer is the main audio stage.
   useEffect(() => {
@@ -60,6 +64,23 @@ export function CollectionScreen({ game, go }: Props) {
           ⟲ Reset
         </button>
       </header>
+
+      <div className="flex justify-center">
+        <button
+          onClick={() => chartUnlocked && setChartOpen(true)}
+          disabled={!chartUnlocked}
+          className={`rounded-full px-4 py-2 text-sm font-black ring-1 shadow-sm transition ${
+            chartUnlocked
+              ? "bg-gradient-to-r from-amber-400 to-rose-400 text-white ring-amber-500 hover:scale-105"
+              : "bg-muted text-muted-foreground ring-border cursor-not-allowed"
+          }`}
+          aria-label="Multiplication chart"
+        >
+          {chartUnlocked
+            ? "✨ Multiplication chart"
+            : `🔒 Multiplication chart — solve ${Math.max(0, 100 - multSolved)} more`}
+        </button>
+      </div>
 
       <p className="text-center text-sm font-bold text-muted-foreground">
         {game.unlockedSprunkies.length} / {sprunkies.length} collected · Tap a Sprunki to loop · Tap again to stop
@@ -213,6 +234,41 @@ export function CollectionScreen({ game, go }: Props) {
                   </div>
                 );
               })()}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {chartOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4 backdrop-blur-sm"
+            onClick={() => setChartOpen(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              transition={{ type: "spring", stiffness: 240, damping: 20 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-2xl rounded-[2rem] bg-card p-5 shadow-2xl ring-1 ring-border sm:p-7"
+            >
+              <div className="mb-3 flex items-center justify-between">
+                <h3 className="text-2xl font-black">✨ Multiplication chart</h3>
+                <button
+                  onClick={() => setChartOpen(false)}
+                  className="rounded-full bg-muted px-3 py-1 text-sm font-bold hover:bg-accent"
+                >
+                  Close
+                </button>
+              </div>
+              <p className="mb-3 text-sm text-muted-foreground">
+                A reference for your math journey. You earned it!
+              </p>
+              <MultiplicationChart size={10} />
             </motion.div>
           </motion.div>
         )}

@@ -42,6 +42,8 @@ export interface GameState {
   totalCorrect: number;
   totalAnswered: number;
   playTimeMs: number;
+  multiplicationSolved: number;
+  multiplicationChartUnlocked: boolean;
   sprunkiProgress: Record<number, SprunkiProgress>;
   settings: Settings;
   lastPlayedAt?: string;
