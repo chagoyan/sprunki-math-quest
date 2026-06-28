@@ -5,6 +5,7 @@ import { SprunkiAvatar } from "@/components/SprunkiAvatar";
 import { CountingBeads } from "@/components/CountingBeads";
 import { fireConfetti } from "@/components/ConfettiBurst";
 import { generateProblem, operationSymbol, pickOperation } from "@/lib/problems";
+import { EqualGroupsVisual } from "@/components/EqualGroupsVisual";
 import { sound } from "@/lib/sound";
 import { music } from "@/lib/music";
 import type { UseGameState } from "@/hooks/useGameState";
@@ -23,7 +24,16 @@ function pickGuide(list: Sprunki[]): Sprunki {
 export function PracticeScreen({ game, go }: Props) {
   const { state, unlockedSprunkies, recordAnswer, markSelected } = game;
   const ops = state.settings.operations?.length ? state.settings.operations : ["addition" as const];
-  const [problem, setProblem] = useState<Problem>(() => generateProblem({ operation: pickOperation(ops) }));
+  const multSolvedRef = useRef(state.multiplicationSolved);
+  useEffect(() => {
+    multSolvedRef.current = state.multiplicationSolved;
+  }, [state.multiplicationSolved]);
+  const makeProblem = useCallback(
+    (op = pickOperation(ops)) =>
+      generateProblem({ operation: op, multiplicationSolved: multSolvedRef.current }),
+    [ops],
+  );
+  const [problem, setProblem] = useState<Problem>(() => makeProblem());
   const [guide, setGuide] = useState<Sprunki>(() => pickGuide(unlockedSprunkies));
   const [phrase, setPhrase] = useState<string>("");
   const [selected, setSelected] = useState<number | null>(null);
@@ -39,10 +49,10 @@ export function PracticeScreen({ game, go }: Props) {
     const next = pickGuide(unlockedSprunkies);
     setGuide(next);
     markSelected(next.id);
-    setProblem(generateProblem({ operation: pickOperation(ops) }));
+    setProblem(makeProblem());
     setSelected(null);
     setStatus("idle");
-  }, [unlockedSprunkies, markSelected, ops]);
+  }, [unlockedSprunkies, markSelected, makeProblem]);
 
   useEffect(() => {
     // initial select count for first guide
