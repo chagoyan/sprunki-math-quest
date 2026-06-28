@@ -281,6 +281,7 @@ function DragObject({
   disabled,
   selected,
   onTap,
+  onDragStart,
   onDrop,
   onDragMove,
 }: {
@@ -288,6 +289,7 @@ function DragObject({
   disabled?: boolean;
   selected?: boolean;
   onTap: () => void;
+  onDragStart?: () => void;
   onDrop: (x: number, y: number) => void;
   onDragMove: (x: number, y: number) => void;
 }) {
@@ -299,7 +301,7 @@ function DragObject({
     dragging: false,
     moved: false,
   });
-  const callbacksRef = useRef({ onTap, onDrop, onDragMove });
+  const callbacksRef = useRef({ onTap, onDrop, onDragMove, onDragStart });
   const listenersRef = useRef<{
     move: (event: PointerEvent) => void;
     up: (event: PointerEvent) => void;
@@ -308,8 +310,8 @@ function DragObject({
   const [offset, setOffset] = useState<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
-    callbacksRef.current = { onTap, onDrop, onDragMove };
-  }, [onTap, onDrop, onDragMove]);
+    callbacksRef.current = { onTap, onDrop, onDragMove, onDragStart };
+  }, [onTap, onDrop, onDragMove, onDragStart]);
 
   const removeWindowListeners = useCallback(() => {
     const listeners = listenersRef.current;
