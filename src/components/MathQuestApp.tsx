@@ -5,11 +5,12 @@ import { PracticeScreen } from "@/components/screens/PracticeScreen";
 import { CollectionScreen } from "@/components/screens/CollectionScreen";
 import { SettingsScreen } from "@/components/screens/SettingsScreen";
 import { ParentScreen } from "@/components/screens/ParentScreen";
+import { DndTestScreen } from "@/components/screens/DndTestScreen";
 import { useGameState } from "@/hooks/useGameState";
 import { music } from "@/lib/music";
 import { sound } from "@/lib/sound";
 
-export type Screen = "home" | "practice" | "collection" | "settings" | "parent";
+export type Screen = "home" | "practice" | "collection" | "settings" | "parent" | "dndtest";
 
 export function MathQuestApp() {
   const [screen, setScreen] = useState<Screen>("home");
@@ -59,6 +60,7 @@ export function MathQuestApp() {
       {screen === "collection" && <CollectionScreen game={game} go={setScreen} />}
       {screen === "settings" && <SettingsScreen game={game} go={setScreen} />}
       {screen === "parent" && <ParentScreen game={game} go={setScreen} />}
+      {screen === "dndtest" && <DndTestScreen go={setScreen} />}
     </AppShell>
   );
 }
