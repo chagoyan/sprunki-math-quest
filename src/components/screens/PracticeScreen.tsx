@@ -6,6 +6,7 @@ import { CountingBeads } from "@/components/CountingBeads";
 import { fireConfetti } from "@/components/ConfettiBurst";
 import { generateProblem, operationSymbol, pickOperation } from "@/lib/problems";
 import { EqualGroupsVisual } from "@/components/EqualGroupsVisual";
+import { SharingVisual } from "@/components/SharingVisual";
 import { sound } from "@/lib/sound";
 import { music } from "@/lib/music";
 import type { UseGameState } from "@/hooks/useGameState";
@@ -25,12 +26,20 @@ export function PracticeScreen({ game, go }: Props) {
   const { state, unlockedSprunkies, recordAnswer, markSelected } = game;
   const ops = state.settings.operations?.length ? state.settings.operations : ["addition" as const];
   const multSolvedRef = useRef(state.multiplicationSolved);
+  const divSolvedRef = useRef(state.divisionSolved);
   useEffect(() => {
     multSolvedRef.current = state.multiplicationSolved;
   }, [state.multiplicationSolved]);
+  useEffect(() => {
+    divSolvedRef.current = state.divisionSolved;
+  }, [state.divisionSolved]);
   const makeProblem = useCallback(
     (op = pickOperation(ops)) =>
-      generateProblem({ operation: op, multiplicationSolved: multSolvedRef.current }),
+      generateProblem({
+        operation: op,
+        multiplicationSolved: multSolvedRef.current,
+        divisionSolved: divSolvedRef.current,
+      }),
     [ops],
   );
   const [problem, setProblem] = useState<Problem>(() => makeProblem());
