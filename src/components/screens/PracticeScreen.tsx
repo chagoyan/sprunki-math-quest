@@ -79,26 +79,31 @@ export function PracticeScreen({ game, go }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [guide.icon]);
 
+  const handleCorrect = useCallback(() => {
+    if (sfxOn) sound.correct();
+    setStatus("correct");
+    const result = recordAnswer(true, guide.id, problem.operation);
+    setPhrase(guide.catchPhrases[Math.floor(Math.random() * guide.catchPhrases.length)]);
+    fireConfetti("small");
+    const advanceDelay =
+      problem.operation === "multiplication" || problem.operation === "division" ? 2400 : 1100;
+    if (result.leveledUp) {
+      if (sfxOn) {
+        setTimeout(() => sound.levelUp(), 250);
+        if (result.unlocked) setTimeout(() => sound.unlock(), 700);
+      }
+      setLevelUp({ level: result.newLevel, unlocked: result.unlocked });
+    } else {
+      advanceTimer.current = window.setTimeout(setupNext, advanceDelay);
+    }
+  }, [sfxOn, recordAnswer, guide.id, guide.catchPhrases, problem.operation, setupNext]);
+
   const onAnswer = (choice: number) => {
     if (status === "correct") return;
     setSelected(choice);
     const correct = choice === problem.answer;
     if (correct) {
-      if (sfxOn) sound.correct();
-      setStatus("correct");
-      const result = recordAnswer(true, guide.id, problem.operation);
-      setPhrase(guide.catchPhrases[Math.floor(Math.random() * guide.catchPhrases.length)]);
-      fireConfetti("small");
-      const advanceDelay = problem.operation === "multiplication" ? 2200 : 1100;
-      if (result.leveledUp) {
-        if (sfxOn) {
-          setTimeout(() => sound.levelUp(), 250);
-          if (result.unlocked) setTimeout(() => sound.unlock(), 700);
-        }
-        setLevelUp({ level: result.newLevel, unlocked: result.unlocked });
-      } else {
-        advanceTimer.current = window.setTimeout(setupNext, advanceDelay);
-      }
+      handleCorrect();
     } else {
       if (sfxOn) sound.wrong();
       setStatus("wrong");
@@ -107,6 +112,11 @@ export function PracticeScreen({ game, go }: Props) {
       window.setTimeout(() => setStatus("idle"), 600);
     }
   };
+
+  const onSharingSolved = useCallback(() => {
+    if (status === "correct") return;
+    handleCorrect();
+  }, [status, handleCorrect]);
 
   const dismissLevelUp = () => {
     setLevelUp(null);
