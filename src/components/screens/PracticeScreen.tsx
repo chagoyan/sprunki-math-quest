@@ -39,10 +39,10 @@ export function PracticeScreen({ game, go }: Props) {
     const next = pickGuide(unlockedSprunkies);
     setGuide(next);
     markSelected(next.id);
-    setProblem(generateProblem({ operation: "addition" }));
+    setProblem(generateProblem({ operation: pickOperation(ops) }));
     setSelected(null);
     setStatus("idle");
-  }, [unlockedSprunkies, markSelected]);
+  }, [unlockedSprunkies, markSelected, ops]);
 
   useEffect(() => {
     // initial select count for first guide
