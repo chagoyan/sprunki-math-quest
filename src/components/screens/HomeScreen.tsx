@@ -87,7 +87,6 @@ export function HomeScreen({ game, go }: Props) {
                       aria-label={label}
                     />
                     <span className="text-lg font-black">{symbol}</span>
-                    <span className="text-sm font-bold">{label}</span>
                   </label>
                 );
               })}
