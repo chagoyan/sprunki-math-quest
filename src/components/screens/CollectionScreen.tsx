@@ -65,6 +65,23 @@ export function CollectionScreen({ game, go }: Props) {
         </button>
       </header>
 
+      <div className="flex justify-center">
+        <button
+          onClick={() => chartUnlocked && setChartOpen(true)}
+          disabled={!chartUnlocked}
+          className={`rounded-full px-4 py-2 text-sm font-black ring-1 shadow-sm transition ${
+            chartUnlocked
+              ? "bg-gradient-to-r from-amber-400 to-rose-400 text-white ring-amber-500 hover:scale-105"
+              : "bg-muted text-muted-foreground ring-border cursor-not-allowed"
+          }`}
+          aria-label="Multiplication chart"
+        >
+          {chartUnlocked
+            ? "✨ Multiplication chart"
+            : `🔒 Multiplication chart — solve ${Math.max(0, 100 - multSolved)} more`}
+        </button>
+      </div>
+
       <p className="text-center text-sm font-bold text-muted-foreground">
         {game.unlockedSprunkies.length} / {sprunkies.length} collected · Tap a Sprunki to loop · Tap again to stop
         {activeIds.size > 0 && <> · <span className="text-emerald-600">{activeIds.size} jamming</span></>}
