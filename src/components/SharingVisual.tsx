@@ -91,11 +91,11 @@ export function SharingVisual({
     touchEnd: (event: TouchEvent) => void;
     touchCancel: (event: TouchEvent) => void;
   } | null>(null);
-  const pushDebug = useCallback((msg: string) => {
-    setDebugLog((prev) => {
-      const ts = new Date().toISOString().slice(14, 23);
-      return [`${ts} ${msg}`, ...prev].slice(0, 10);
-    });
+  const pushDebug = useCallback((_msg: string) => {
+    // debug logging removed
+  }, []);
+  const setDebugPointer = useCallback((_p: { x: number; y: number; hit: string | null } | null) => {
+    // debug pointer removed
   }, []);
 
   useEffect(() => {
