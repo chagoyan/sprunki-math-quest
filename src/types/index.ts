@@ -31,6 +31,7 @@ export interface Settings {
   darkMode: boolean;
   parentPassword: string;
   muted: boolean;
+  operations: Operation[];
 }
 
 export interface GameState {
