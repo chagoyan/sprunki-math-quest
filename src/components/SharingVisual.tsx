@@ -176,9 +176,12 @@ export function SharingVisual({
   const removeDragListeners = useCallback(() => {
     const listeners = dragListenersRef.current;
     if (!listeners) return;
-    window.removeEventListener("pointermove", listeners.move, { capture: true });
-    window.removeEventListener("pointerup", listeners.up, { capture: true });
-    window.removeEventListener("pointercancel", listeners.cancel, { capture: true });
+    window.removeEventListener("pointermove", listeners.move, true);
+    window.removeEventListener("pointerup", listeners.up, true);
+    window.removeEventListener("pointercancel", listeners.cancel, true);
+    document.removeEventListener("pointermove", listeners.move, true);
+    document.removeEventListener("pointerup", listeners.up, true);
+    document.removeEventListener("pointercancel", listeners.cancel, true);
     dragListenersRef.current = null;
   }, []);
 
@@ -273,6 +276,9 @@ export function SharingVisual({
     window.addEventListener("pointermove", move, { passive: false, capture: true });
     window.addEventListener("pointerup", up, { passive: false, capture: true });
     window.addEventListener("pointercancel", cancel, { capture: true });
+    document.addEventListener("pointermove", move, { passive: false, capture: true });
+    document.addEventListener("pointerup", up, { passive: false, capture: true });
+    document.addEventListener("pointercancel", cancel, { capture: true });
   };
 
   const pool = items.filter((it) => it.recipient === null);
@@ -304,6 +310,9 @@ export function SharingVisual({
               type="button"
               disabled={solved}
               onPointerDown={(event) => startDrag(event, it.id)}
+              onPointerMove={(event) => dragListenersRef.current?.move(event.nativeEvent)}
+              onPointerUp={(event) => dragListenersRef.current?.up(event.nativeEvent)}
+              onPointerCancel={(event) => dragListenersRef.current?.cancel(event.nativeEvent)}
               style={{
                 touchAction: "none",
                 WebkitTapHighlightColor: "transparent",
