@@ -74,6 +74,17 @@ export function SharingVisual({
   const [solved, setSolved] = useState(false);
   const [debugLog, setDebugLog] = useState<string[]>([]);
   const [debugPointer, setDebugPointer] = useState<{ x: number; y: number; hit: string | null } | null>(null);
+  const [drag, setDrag] = useState<{
+    itemId: number;
+    pointerId: number;
+    startX: number;
+    startY: number;
+    x: number;
+    y: number;
+    moved: boolean;
+  } | null>(null);
+  const dragRef = useRef<typeof drag>(null);
+  const activeButtonRef = useRef<HTMLButtonElement | null>(null);
   const pushDebug = useCallback((msg: string) => {
     setDebugLog((prev) => {
       const ts = new Date().toISOString().slice(14, 23);
@@ -86,6 +97,8 @@ export function SharingVisual({
     setHint("");
     setSolved(false);
     setSelectedId(null);
+    setDrag(null);
+    dragRef.current = null;
   }, [resetKey, total]);
 
   useEffect(() => {
@@ -151,6 +164,103 @@ export function SharingVisual({
     setItems(Array.from({ length: total }, (_, i) => ({ id: i, recipient: null })));
     setHint("");
     setSelectedId(null);
+    setDrag(null);
+    dragRef.current = null;
+  };
+
+  const finishDrag = useCallback(
+    (itemId: number, pointerId: number, x: number, y: number, moved: boolean, cancelled = false) => {
+      const button = activeButtonRef.current;
+      try {
+        if (button?.hasPointerCapture(pointerId)) button.releasePointerCapture(pointerId);
+      } catch {
+        // Ignore browsers that already released capture.
+      }
+      activeButtonRef.current = null;
+      dragRef.current = null;
+      setDrag(null);
+      setHoverRecipient(null);
+
+      if (cancelled) {
+        pushDebug(`drag cancel item #${itemId}`);
+        return;
+      }
+
+      if (!moved) {
+        pushDebug(`tap item #${itemId}`);
+        setSelectedId((cur) => (cur === itemId ? null : itemId));
+        return;
+      }
+
+      const idx = recipientAtPoint(x, y);
+      pushDebug(`drop item #${itemId} @ (${Math.round(x)},${Math.round(y)}) → ${idx === null ? "MISS" : "#" + idx}`);
+      if (idx !== null) assign(itemId, idx);
+    },
+    [assign, pushDebug, recipientAtPoint],
+  );
+
+  useEffect(() => {
+    if (!drag) return;
+
+    const move = (event: PointerEvent) => {
+      const current = dragRef.current;
+      if (!current || event.pointerId !== current.pointerId) return;
+      event.preventDefault();
+      const dx = event.clientX - current.startX;
+      const dy = event.clientY - current.startY;
+      const moved = current.moved || Math.hypot(dx, dy) > 4;
+      const next = { ...current, x: event.clientX, y: event.clientY, moved };
+      dragRef.current = next;
+      setDrag(next);
+      if (moved) setHoverRecipient(recipientAtPoint(event.clientX, event.clientY));
+    };
+
+    const up = (event: PointerEvent) => {
+      const current = dragRef.current;
+      if (!current || event.pointerId !== current.pointerId) return;
+      event.preventDefault();
+      finishDrag(current.itemId, current.pointerId, event.clientX, event.clientY, current.moved);
+    };
+
+    const cancel = (event: PointerEvent) => {
+      const current = dragRef.current;
+      if (!current || event.pointerId !== current.pointerId) return;
+      finishDrag(current.itemId, current.pointerId, event.clientX, event.clientY, current.moved, true);
+    };
+
+    window.addEventListener("pointermove", move, { passive: false, capture: true });
+    window.addEventListener("pointerup", up, { passive: false, capture: true });
+    window.addEventListener("pointercancel", cancel, { capture: true });
+    return () => {
+      window.removeEventListener("pointermove", move, { capture: true });
+      window.removeEventListener("pointerup", up, { capture: true });
+      window.removeEventListener("pointercancel", cancel, { capture: true });
+    };
+  }, [drag, finishDrag, recipientAtPoint]);
+
+  const startDrag = (event: React.PointerEvent<HTMLButtonElement>, itemId: number) => {
+    if (solved || dragRef.current) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const next = {
+      itemId,
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      x: event.clientX,
+      y: event.clientY,
+      moved: false,
+    };
+    activeButtonRef.current = event.currentTarget;
+    try {
+      event.currentTarget.setPointerCapture(event.pointerId);
+    } catch {
+      // Window-level listeners still track the drag.
+    }
+    dragRef.current = next;
+    setDrag(next);
+    setDebugPointer({ x: event.clientX, y: event.clientY, hit: "drag start" });
+    pushDebug(`drag start item #${itemId}`);
   };
 
   const pool = items.filter((it) => it.recipient === null);
@@ -177,24 +287,28 @@ export function SharingVisual({
             <p className="py-2 text-sm font-bold text-muted-foreground">All shared — but is it fair?</p>
           )}
           {pool.map((it) => (
-            <DragObject
+            <button
               key={it.id}
-              object={object}
+              type="button"
               disabled={solved}
-              selected={selectedId === it.id}
-              onTap={() => {
-                pushDebug(`tap item #${it.id}`);
-                setSelectedId((cur) => (cur === it.id ? null : it.id));
+              onPointerDown={(event) => startDrag(event, it.id)}
+              style={{
+                touchAction: "none",
+                WebkitTapHighlightColor: "transparent",
+                cursor: solved ? "default" : drag?.itemId === it.id ? "grabbing" : "grab",
               }}
-              onDragStart={() => pushDebug(`drag start item #${it.id}`)}
-              onDrop={(x, y) => {
-                const idx = recipientAtPoint(x, y);
-                pushDebug(`drop item #${it.id} @ (${Math.round(x)},${Math.round(y)}) → ${idx === null ? "MISS" : "#" + idx}`);
-                if (idx !== null) assign(it.id, idx);
-                setHoverRecipient(null);
-              }}
-              onDragMove={(x, y) => setHoverRecipient(recipientAtPoint(x, y))}
-            />
+              className={`inline-flex h-12 w-12 select-none items-center justify-center rounded-full p-1 text-2xl transition-all sm:h-14 sm:w-14 sm:text-3xl ${
+                drag?.itemId === it.id
+                  ? "opacity-30"
+                  : selectedId === it.id
+                    ? "bg-[oklch(0.92_0.1_240)] ring-2 ring-[oklch(0.6_0.2_240)] shadow-md"
+                    : "hover:bg-white/70"
+              }`}
+              aria-label="Draggable item"
+              aria-pressed={selectedId === it.id}
+            >
+              <span className="pointer-events-none">{object}</span>
+            </button>
           ))}
         </div>
       </div>
@@ -313,155 +427,25 @@ export function SharingVisual({
           }}
         />
       )}
+
+      {drag && (
+        <div
+          aria-hidden
+          style={{
+            position: "fixed",
+            left: drag.x,
+            top: drag.y,
+            transform: "translate(-50%, -50%) scale(1.35)",
+            zIndex: 9998,
+            pointerEvents: "none",
+            fontSize: "2.25rem",
+            lineHeight: 1,
+            filter: "drop-shadow(0 10px 12px rgba(0,0,0,0.25))",
+          }}
+        >
+          {object}
+        </div>
+      )}
     </div>
-  );
-}
-
-function DragObject({
-  object,
-  disabled,
-  selected,
-  onTap,
-  onDragStart,
-  onDrop,
-  onDragMove,
-}: {
-  object: string;
-  disabled?: boolean;
-  selected?: boolean;
-  onTap: () => void;
-  onDragStart?: () => void;
-  onDrop: (x: number, y: number) => void;
-  onDragMove: (x: number, y: number) => void;
-}) {
-  const ref = useRef<HTMLButtonElement | null>(null);
-  const stateRef = useRef({
-    startX: 0,
-    startY: 0,
-    pointerId: -1,
-    dragging: false,
-    moved: false,
-  });
-  const callbacksRef = useRef({ onTap, onDrop, onDragMove, onDragStart });
-  const listenersRef = useRef<{
-    move: (event: PointerEvent) => void;
-    up: (event: PointerEvent) => void;
-    cancel: (event: PointerEvent) => void;
-  } | null>(null);
-  const [offset, setOffset] = useState<{ x: number; y: number } | null>(null);
-
-  useEffect(() => {
-    callbacksRef.current = { onTap, onDrop, onDragMove, onDragStart };
-  }, [onTap, onDrop, onDragMove, onDragStart]);
-
-  const removeWindowListeners = useCallback(() => {
-    const listeners = listenersRef.current;
-    if (!listeners) return;
-    window.removeEventListener("pointermove", listeners.move);
-    window.removeEventListener("pointerup", listeners.up);
-    window.removeEventListener("pointercancel", listeners.cancel);
-    listenersRef.current = null;
-  }, []);
-
-  const finishDrag = useCallback(
-    (pointerId: number, clientX: number, clientY: number, cancelled = false) => {
-      const st = stateRef.current;
-      if (!st.dragging || st.pointerId !== pointerId) return;
-
-      removeWindowListeners();
-      const moved = st.moved;
-      stateRef.current = {
-        ...st,
-        pointerId: -1,
-        dragging: false,
-        moved: false,
-      };
-
-      const el = ref.current;
-      try {
-        if (el?.hasPointerCapture(pointerId)) el.releasePointerCapture(pointerId);
-      } catch {
-        // Some touch browsers throw when capture has already been released.
-      }
-
-      setOffset(null);
-      callbacksRef.current.onDragMove(Number.NEGATIVE_INFINITY, Number.NEGATIVE_INFINITY);
-      if (cancelled) return;
-      if (moved) callbacksRef.current.onDrop(clientX, clientY);
-      else callbacksRef.current.onTap();
-    },
-    [removeWindowListeners],
-  );
-
-  useEffect(() => removeWindowListeners, [removeWindowListeners]);
-
-  const handlePointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
-    if (disabled) return;
-    e.preventDefault();
-    const el = ref.current;
-    if (!el) return;
-    removeWindowListeners();
-    try {
-      el.setPointerCapture(e.pointerId);
-    } catch {
-      // Window listeners below still keep the drag alive if capture is unavailable.
-    }
-    stateRef.current = {
-      startX: e.clientX,
-      startY: e.clientY,
-      pointerId: e.pointerId,
-      dragging: true,
-      moved: false,
-    };
-    setOffset({ x: 0, y: 0 });
-    callbacksRef.current.onDragStart?.();
-
-    const pointerId = e.pointerId;
-    const move = (event: PointerEvent) => {
-      const st = stateRef.current;
-      if (!st.dragging || event.pointerId !== pointerId) return;
-      event.preventDefault();
-      const dx = event.clientX - st.startX;
-      const dy = event.clientY - st.startY;
-      if (!st.moved && Math.hypot(dx, dy) > 5) st.moved = true;
-      setOffset({ x: dx, y: dy });
-      if (st.moved) callbacksRef.current.onDragMove(event.clientX, event.clientY);
-    };
-    const up = (event: PointerEvent) => {
-      finishDrag(event.pointerId, event.clientX, event.clientY);
-    };
-    const cancel = (event: PointerEvent) => {
-      finishDrag(event.pointerId, event.clientX, event.clientY, true);
-    };
-
-    listenersRef.current = { move, up, cancel };
-    window.addEventListener("pointermove", move, { passive: false });
-    window.addEventListener("pointerup", up);
-    window.addEventListener("pointercancel", cancel);
-  };
-
-  return (
-    <button
-      ref={ref}
-      type="button"
-      onPointerDown={handlePointerDown}
-      disabled={disabled}
-      style={{
-        touchAction: "none",
-        WebkitTapHighlightColor: "transparent",
-        pointerEvents: offset ? "none" : undefined,
-        transform: offset ? `translate(${offset.x}px, ${offset.y}px) scale(1.35)` : undefined,
-        zIndex: offset ? 50 : undefined,
-        position: offset ? "relative" : undefined,
-        cursor: disabled ? "default" : offset ? "grabbing" : "grab",
-      }}
-      className={`inline-flex select-none items-center justify-center rounded-full p-1 text-2xl transition-shadow sm:text-3xl ${
-        selected ? "bg-[oklch(0.92_0.1_240)] ring-2 ring-[oklch(0.6_0.2_240)] shadow-md" : ""
-      }`}
-      aria-label="Draggable item"
-      aria-pressed={selected}
-    >
-      <span className="pointer-events-none">{object}</span>
-    </button>
   );
 }
