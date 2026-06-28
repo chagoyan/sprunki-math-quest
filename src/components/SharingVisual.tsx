@@ -1,7 +1,6 @@
 import { motion, useDragControls } from "framer-motion";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { SprunkiAvatar } from "@/components/SprunkiAvatar";
-import { sound } from "@/lib/sound";
 import type { Sprunki } from "@/types";
 
 interface Props {
