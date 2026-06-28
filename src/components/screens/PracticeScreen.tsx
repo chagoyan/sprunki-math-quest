@@ -4,7 +4,7 @@ import { BigButton } from "@/components/BigButton";
 import { SprunkiAvatar } from "@/components/SprunkiAvatar";
 import { CountingBeads } from "@/components/CountingBeads";
 import { fireConfetti } from "@/components/ConfettiBurst";
-import { generateProblem, operationSymbol } from "@/lib/problems";
+import { generateProblem, operationSymbol, pickOperation } from "@/lib/problems";
 import { sound } from "@/lib/sound";
 import { music } from "@/lib/music";
 import type { UseGameState } from "@/hooks/useGameState";
