@@ -77,9 +77,10 @@ export function PracticeScreen({ game, go }: Props) {
     if (correct) {
       if (sfxOn) sound.correct();
       setStatus("correct");
-      const result = recordAnswer(true, guide.id);
+      const result = recordAnswer(true, guide.id, problem.operation);
       setPhrase(guide.catchPhrases[Math.floor(Math.random() * guide.catchPhrases.length)]);
       fireConfetti("small");
+      const advanceDelay = problem.operation === "multiplication" ? 2200 : 1100;
       if (result.leveledUp) {
         if (sfxOn) {
           setTimeout(() => sound.levelUp(), 250);
@@ -87,12 +88,12 @@ export function PracticeScreen({ game, go }: Props) {
         }
         setLevelUp({ level: result.newLevel, unlocked: result.unlocked });
       } else {
-        advanceTimer.current = window.setTimeout(setupNext, 1100);
+        advanceTimer.current = window.setTimeout(setupNext, advanceDelay);
       }
     } else {
       if (sfxOn) sound.wrong();
       setStatus("wrong");
-      recordAnswer(false, guide.id);
+      recordAnswer(false, guide.id, problem.operation);
       cardControls.start({ x: [0, -14, 14, -10, 10, -4, 0], transition: { duration: 0.5 } });
       window.setTimeout(() => setStatus("idle"), 600);
     }
