@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type TouchEvent as ReactTouchEvent } from "react";
 import { SprunkiAvatar } from "@/components/SprunkiAvatar";
 import type { Sprunki } from "@/types";
 
@@ -89,6 +89,9 @@ export function SharingVisual({
     move: (event: PointerEvent) => void;
     up: (event: PointerEvent) => void;
     cancel: (event: PointerEvent) => void;
+    touchMove: (event: TouchEvent) => void;
+    touchEnd: (event: TouchEvent) => void;
+    touchCancel: (event: TouchEvent) => void;
   } | null>(null);
   const pushDebug = useCallback((msg: string) => {
     setDebugLog((prev) => {
@@ -176,9 +179,18 @@ export function SharingVisual({
   const removeDragListeners = useCallback(() => {
     const listeners = dragListenersRef.current;
     if (!listeners) return;
-    window.removeEventListener("pointermove", listeners.move, { capture: true });
-    window.removeEventListener("pointerup", listeners.up, { capture: true });
-    window.removeEventListener("pointercancel", listeners.cancel, { capture: true });
+    window.removeEventListener("pointermove", listeners.move, true);
+    window.removeEventListener("pointerup", listeners.up, true);
+    window.removeEventListener("pointercancel", listeners.cancel, true);
+    document.removeEventListener("pointermove", listeners.move, true);
+    document.removeEventListener("pointerup", listeners.up, true);
+    document.removeEventListener("pointercancel", listeners.cancel, true);
+    window.removeEventListener("touchmove", listeners.touchMove, true);
+    window.removeEventListener("touchend", listeners.touchEnd, true);
+    window.removeEventListener("touchcancel", listeners.touchCancel, true);
+    document.removeEventListener("touchmove", listeners.touchMove, true);
+    document.removeEventListener("touchend", listeners.touchEnd, true);
+    document.removeEventListener("touchcancel", listeners.touchCancel, true);
     dragListenersRef.current = null;
   }, []);
 
@@ -218,41 +230,45 @@ export function SharingVisual({
     return removeDragListeners;
   }, [removeDragListeners]);
 
-  const startDrag = (event: React.PointerEvent<HTMLButtonElement>, itemId: number) => {
+  const beginDrag = useCallback((button: HTMLButtonElement, itemId: number, pointerId: number, x: number, y: number) => {
     if (solved || dragRef.current) return;
-    event.preventDefault();
-    event.stopPropagation();
     const next = {
       itemId,
-      pointerId: event.pointerId,
-      startX: event.clientX,
-      startY: event.clientY,
-      x: event.clientX,
-      y: event.clientY,
+      pointerId,
+      startX: x,
+      startY: y,
+      x,
+      y,
       moved: false,
     };
-    activeButtonRef.current = event.currentTarget;
+    activeButtonRef.current = button;
     try {
-      event.currentTarget.setPointerCapture(event.pointerId);
+      if (pointerId >= 0) button.setPointerCapture(pointerId);
     } catch {
       // Window-level listeners still track the drag.
     }
     dragRef.current = next;
     setDrag(next);
-    setDebugPointer({ x: event.clientX, y: event.clientY, hit: "drag start" });
+    setDebugPointer({ x, y, hit: pointerId >= 0 ? "pointer drag start" : "touch drag start" });
     pushDebug(`drag start item #${itemId}`);
+
+    const moveTo = (clientX: number, clientY: number) => {
+      const current = dragRef.current;
+      if (!current) return;
+      const dx = clientX - current.startX;
+      const dy = clientY - current.startY;
+      const moved = current.moved || Math.hypot(dx, dy) > 4;
+      const updated = { ...current, x: clientX, y: clientY, moved };
+      dragRef.current = updated;
+      setDrag(updated);
+      if (moved) setHoverRecipient(recipientAtPoint(clientX, clientY));
+    };
 
     const move = (moveEvent: PointerEvent) => {
       const current = dragRef.current;
       if (!current || moveEvent.pointerId !== current.pointerId) return;
       moveEvent.preventDefault();
-      const dx = moveEvent.clientX - current.startX;
-      const dy = moveEvent.clientY - current.startY;
-      const moved = current.moved || Math.hypot(dx, dy) > 4;
-      const updated = { ...current, x: moveEvent.clientX, y: moveEvent.clientY, moved };
-      dragRef.current = updated;
-      setDrag(updated);
-      if (moved) setHoverRecipient(recipientAtPoint(moveEvent.clientX, moveEvent.clientY));
+      moveTo(moveEvent.clientX, moveEvent.clientY);
     };
 
     const up = (upEvent: PointerEvent) => {
@@ -268,11 +284,58 @@ export function SharingVisual({
       finishDrag(current.itemId, current.pointerId, cancelEvent.clientX, cancelEvent.clientY, current.moved, true);
     };
 
+    const touchMove = (touchEvent: TouchEvent) => {
+      const current = dragRef.current;
+      const touch = touchEvent.touches[0] ?? touchEvent.changedTouches[0];
+      if (!current || !touch) return;
+      touchEvent.preventDefault();
+      moveTo(touch.clientX, touch.clientY);
+    };
+
+    const touchEnd = (touchEvent: TouchEvent) => {
+      const current = dragRef.current;
+      const touch = touchEvent.changedTouches[0];
+      if (!current) return;
+      touchEvent.preventDefault();
+      finishDrag(current.itemId, current.pointerId, touch?.clientX ?? current.x, touch?.clientY ?? current.y, current.moved);
+    };
+
+    const touchCancel = (touchEvent: TouchEvent) => {
+      const current = dragRef.current;
+      const touch = touchEvent.changedTouches[0];
+      if (!current) return;
+      finishDrag(current.itemId, current.pointerId, touch?.clientX ?? current.x, touch?.clientY ?? current.y, current.moved, true);
+    };
+
     removeDragListeners();
-    dragListenersRef.current = { move, up, cancel };
+    dragListenersRef.current = { move, up, cancel, touchMove, touchEnd, touchCancel };
     window.addEventListener("pointermove", move, { passive: false, capture: true });
     window.addEventListener("pointerup", up, { passive: false, capture: true });
     window.addEventListener("pointercancel", cancel, { capture: true });
+    document.addEventListener("pointermove", move, { passive: false, capture: true });
+    document.addEventListener("pointerup", up, { passive: false, capture: true });
+    document.addEventListener("pointercancel", cancel, { capture: true });
+    window.addEventListener("touchmove", touchMove, { passive: false, capture: true });
+    window.addEventListener("touchend", touchEnd, { passive: false, capture: true });
+    window.addEventListener("touchcancel", touchCancel, { capture: true });
+    document.addEventListener("touchmove", touchMove, { passive: false, capture: true });
+    document.addEventListener("touchend", touchEnd, { passive: false, capture: true });
+    document.addEventListener("touchcancel", touchCancel, { capture: true });
+  }, [finishDrag, pushDebug, recipientAtPoint, removeDragListeners, solved]);
+
+  const startDrag = (event: React.PointerEvent<HTMLButtonElement>, itemId: number) => {
+    event.preventDefault();
+    event.stopPropagation();
+    beginDrag(event.currentTarget, itemId, event.pointerId, event.clientX, event.clientY);
+  };
+
+  const startTouchDrag = (event: ReactTouchEvent<HTMLButtonElement>, itemId: number) => {
+    if (dragRef.current) return;
+    const touch = event.touches[0] ?? event.changedTouches[0];
+    if (!touch) return;
+    event.preventDefault();
+    event.stopPropagation();
+    beginDrag(event.currentTarget, itemId, -1, touch.clientX, touch.clientY);
   };
 
   const pool = items.filter((it) => it.recipient === null);
@@ -304,6 +367,10 @@ export function SharingVisual({
               type="button"
               disabled={solved}
               onPointerDown={(event) => startDrag(event, it.id)}
+              onPointerMove={(event) => dragListenersRef.current?.move(event.nativeEvent)}
+              onPointerUp={(event) => dragListenersRef.current?.up(event.nativeEvent)}
+              onPointerCancel={(event) => dragListenersRef.current?.cancel(event.nativeEvent)}
+              onTouchStart={(event) => startTouchDrag(event, it.id)}
               style={{
                 touchAction: "none",
                 WebkitTapHighlightColor: "transparent",
