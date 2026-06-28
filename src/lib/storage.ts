@@ -20,6 +20,7 @@ export const defaultState: GameState = {
     darkMode: false,
     parentPassword: "1234",
     muted: false,
+    operations: ["addition"],
   },
   version: 1,
 };

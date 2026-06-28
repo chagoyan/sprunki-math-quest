@@ -4,7 +4,7 @@ import { BigButton } from "@/components/BigButton";
 import { SprunkiAvatar } from "@/components/SprunkiAvatar";
 import { CountingBeads } from "@/components/CountingBeads";
 import { fireConfetti } from "@/components/ConfettiBurst";
-import { generateProblem, operationSymbol } from "@/lib/problems";
+import { generateProblem, operationSymbol, pickOperation } from "@/lib/problems";
 import { sound } from "@/lib/sound";
 import { music } from "@/lib/music";
 import type { UseGameState } from "@/hooks/useGameState";
@@ -22,7 +22,8 @@ function pickGuide(list: Sprunki[]): Sprunki {
 
 export function PracticeScreen({ game, go }: Props) {
   const { state, unlockedSprunkies, recordAnswer, markSelected } = game;
-  const [problem, setProblem] = useState<Problem>(() => generateProblem({ operation: "addition" }));
+  const ops = state.settings.operations?.length ? state.settings.operations : ["addition" as const];
+  const [problem, setProblem] = useState<Problem>(() => generateProblem({ operation: pickOperation(ops) }));
   const [guide, setGuide] = useState<Sprunki>(() => pickGuide(unlockedSprunkies));
   const [phrase, setPhrase] = useState<string>("");
   const [selected, setSelected] = useState<number | null>(null);
@@ -38,10 +39,10 @@ export function PracticeScreen({ game, go }: Props) {
     const next = pickGuide(unlockedSprunkies);
     setGuide(next);
     markSelected(next.id);
-    setProblem(generateProblem({ operation: "addition" }));
+    setProblem(generateProblem({ operation: pickOperation(ops) }));
     setSelected(null);
     setStatus("idle");
-  }, [unlockedSprunkies, markSelected]);
+  }, [unlockedSprunkies, markSelected, ops]);
 
   useEffect(() => {
     // initial select count for first guide
