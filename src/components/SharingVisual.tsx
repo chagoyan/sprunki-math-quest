@@ -182,9 +182,14 @@ export function SharingVisual({
               object={object}
               disabled={solved}
               selected={selectedId === it.id}
-              onTap={() => setSelectedId((cur) => (cur === it.id ? null : it.id))}
+              onTap={() => {
+                pushDebug(`tap item #${it.id}`);
+                setSelectedId((cur) => (cur === it.id ? null : it.id));
+              }}
+              onDragStart={() => pushDebug(`drag start item #${it.id}`)}
               onDrop={(x, y) => {
                 const idx = recipientAtPoint(x, y);
+                pushDebug(`drop item #${it.id} @ (${Math.round(x)},${Math.round(y)}) → ${idx === null ? "MISS" : "#" + idx}`);
                 if (idx !== null) assign(it.id, idx);
                 setHoverRecipient(null);
               }}
