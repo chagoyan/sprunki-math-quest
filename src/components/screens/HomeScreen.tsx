@@ -73,7 +73,7 @@ export function HomeScreen({ game, go }: Props) {
                 return (
                   <label
                     key={op}
-                    className={`flex cursor-pointer items-center gap-2 rounded-xl px-3 py-2 ring-1 transition-colors ${
+                    className={`flex cursor-pointer items-center justify-center gap-2 rounded-xl px-3 py-2 ring-1 transition-colors ${
                       checked
                         ? "bg-foreground text-background ring-foreground"
                         : "bg-card ring-border hover:bg-accent"
@@ -87,18 +87,17 @@ export function HomeScreen({ game, go }: Props) {
                       aria-label={label}
                     />
                     <span className="text-lg font-black">{symbol}</span>
-                    <span className="text-sm font-bold">{label}</span>
                   </label>
                 );
               })}
             </div>
           </fieldset>
 
-          <div className="flex flex-wrap gap-3 pt-2">
+          <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:flex-wrap">
             <BigButton size="xl" icon="▶" onClick={() => canPlay && go("practice")}>
               Play
             </BigButton>
-            <BigButton variant="secondary" icon="✨" onClick={() => go("collection")}>
+            <BigButton variant="secondary" size="xl" icon="✨" onClick={() => go("collection")}>
               Collection
             </BigButton>
             <BigButton variant="ghost" icon="⚙️" onClick={() => go("settings")}>
