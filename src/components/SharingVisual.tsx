@@ -117,12 +117,15 @@ export function SharingVisual({
   const recipientAtPoint = useCallback((x: number, y: number) => {
     if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
 
-    const target = document.elementFromPoint(x, y);
+    const target = document.elementFromPoint(x, y) as HTMLElement | null;
     const recipientEl = target?.closest<HTMLElement>("[data-share-recipient]");
     const recipientIndex = recipientEl?.dataset.shareRecipient;
     if (recipientIndex !== undefined) {
       const parsed = Number(recipientIndex);
-      if (Number.isInteger(parsed)) return parsed;
+      if (Number.isInteger(parsed)) {
+        setDebugPointer({ x, y, hit: `#${parsed} (elementFromPoint:${target?.tagName ?? "?"})` });
+        return parsed;
+      }
     }
 
     for (let i = 0; i < recipientRefs.current.length; i++) {
@@ -136,9 +139,11 @@ export function SharingVisual({
         y >= r.top - padding &&
         y <= r.bottom + padding
       ) {
+        setDebugPointer({ x, y, hit: `#${i} (bbox; under=${target?.tagName ?? "?"})` });
         return i;
       }
     }
+    setDebugPointer({ x, y, hit: `miss (under=${target?.tagName ?? "?"}${target?.className ? " ." + String(target.className).slice(0, 24) : ""})` });
     return null;
   }, []);
 
