@@ -93,11 +93,11 @@ export function HomeScreen({ game, go }: Props) {
             </div>
           </fieldset>
 
-          <div className="flex flex-wrap gap-3 pt-2">
+          <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:flex-wrap">
             <BigButton size="xl" icon="▶" onClick={() => canPlay && go("practice")}>
               Play
             </BigButton>
-            <BigButton variant="secondary" icon="✨" onClick={() => go("collection")}>
+            <BigButton variant="secondary" size="xl" icon="✨" onClick={() => go("collection")}>
               Collection
             </BigButton>
             <BigButton variant="ghost" icon="⚙️" onClick={() => go("settings")}>
