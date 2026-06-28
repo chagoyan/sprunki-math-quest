@@ -32,6 +32,22 @@ function pickMultPair(solved: number): [number, number] {
   return pool[Math.floor(Math.random() * pool.length)];
 }
 
+// Sharing-equally model: [total, groups]. All have whole-number quotients, no remainders.
+const DIV_STAGES: Array<Array<[number, number]>> = [
+  // Stage 0 (first ~10): very small, easy to drag
+  [[4, 2], [6, 2], [6, 3], [8, 2]],
+  // Stage 1 (~10–25): introduce 3-group sharing
+  [[4, 2], [6, 2], [6, 3], [8, 2], [9, 3], [10, 2], [12, 3]],
+  // Stage 2 (25+): up to 20 / 5
+  [[6, 3], [8, 2], [9, 3], [10, 2], [12, 3], [12, 4], [15, 3], [20, 5]],
+];
+
+function pickDivPair(solved: number): [number, number] {
+  const stage = solved < 10 ? 0 : solved < 25 ? 1 : 2;
+  const pool = DIV_STAGES[stage];
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
 // Generator is data-driven so subtraction/multiplication/division can be added later.
 export function generateProblem(config: ProblemConfig = { operation: "addition" }): Problem {
   const min = config.min ?? 0;
@@ -58,12 +74,11 @@ export function generateProblem(config: ProblemConfig = { operation: "addition" 
       break;
     }
     case "division": {
-      // Ensure clean division: pick divisor and quotient, compute dividend
-      const divisor = randInt(1, Math.max(1, max));
-      const quotient = randInt(min, max);
-      a = divisor * quotient;
-      b = divisor;
-      answer = quotient;
+      // Sharing-equally model: a = total objects, b = number of groups (Sprunkies).
+      const [total, groups] = pickDivPair(config.divisionSolved ?? 0);
+      a = total;
+      b = groups;
+      answer = total / groups;
       break;
     }
   }
