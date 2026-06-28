@@ -27,7 +27,6 @@ export function HomeScreen({ game, go }: Props) {
     game.updateSettings({ operations: next.length ? next : ["addition"] });
   };
   const canPlay = selectedOps.length > 0;
-  const featured = game.unlockedSprunkies[0] ?? game.unlockedSprunkies[0];
   return (
     <div className="flex flex-col gap-8">
       <header className="flex items-center justify-between">
